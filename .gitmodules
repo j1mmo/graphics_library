@@ -1,0 +1,6 @@
+[submodule "graphics_library"]
+	path = external/graphics_library
+	url = git@github.com:j1mmo/graphics_library.git
+[submodule "external/spdlog"]
+	path = external/spdlog
+	url = https://github.com/gabime/spdlog.git
