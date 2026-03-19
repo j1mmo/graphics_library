@@ -6,7 +6,9 @@
 #include "texture.hpp"
 #include "types.hpp"
 
-#include <mat4.h>
+#include <maths/mat4.hpp>
+#include <maths/vec4.hpp>
+#include <maths/matrix_transformations.hpp>
 
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
@@ -119,12 +121,17 @@ int main() {
   glEnableVertexAttribArray(2);
 
   Texture texture = texture::load("resources/container.jpg");
-
   Texture texture2 = texture::load("resources/awesomeface.png");
 
   Shader shader = shader::compile("shaders/basic.vert", "shaders/basic.frag");
   Shader yellowShader = shader::compile("shaders/basic.vert", "shaders/basic_2.frag");
   Shader multiShader = shader::compile("shaders/position_colour.vert", "shaders/position_colour.frag");
+
+  vec4 vec{1.0f, 0.0f, 0.0f, 1.0f};
+  mat4 trans{};
+  trans = translate(trans, vec3{1.0f, 1.0f, 0.0f});
+  vec = trans * vec;
+  spdlog::error("{} {} {}", vec[0], vec[1], vec[2]);
 
   multiShader.use();
   multiShader.setInt("texture2", 1);

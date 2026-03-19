@@ -6,9 +6,9 @@
 #include <spdlog/spdlog.h>
 
 #include "types.hpp"
-#include "vec3.h"
-#include "vec4.h"
-#include "mat4.h"
+#include <maths/vec3.hpp>
+#include <maths/vec4.hpp>
+#include <maths/mat4.hpp>
 
 struct Shader {
   uint handle;
