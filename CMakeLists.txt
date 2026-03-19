@@ -1,5 +1,9 @@
 cmake_minimum_required(VERSION 3.16)
-project(opengl)
+project(opengl LANGUAGES C CXX)
+
+set(CMAKE_CXX_STANDARD 23)
+set(CMAKE_CSS_STANDARD_REQUIRED ON)
+set(CMAKE_CSS_STANDARD OFF)
 
 find_package(glfw3 REQUIRED)
 find_package(OpenGL REQUIRED)
@@ -7,20 +11,6 @@ find_package(OpenGL REQUIRED)
 set(BUILD_TESTS OFF CACHE BOOL "Disable building tests" FORCE)
 
 add_subdirectory(external/spdlog)
-
-add_executable(opengl src/glad.c
-		      src/main.cpp
-		      include/types.hpp
-		      include/stb_image.h
-		      
-		      include/shader.hpp
-		      include/texture.hpp
-		      
-		      src/shader.cpp
-		      src/texture.cpp
-		      )
-
-target_include_directories(opengl PRIVATE include shaders ${CMAKE_SOURCE_DIR}/external/maths/include)
-		      
-target_link_libraries(opengl PUBLIC spdlog::spdlog_header_only PRIVATE maths glfw dl)
+add_subdirectory(external/mathslib)
+add_subdirectory(src)
 
