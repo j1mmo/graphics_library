@@ -8,6 +8,8 @@
 
 #include <mat4.hpp>
 #include <vec4.hpp>
+#include <general.hpp>
+#include <vertex_array.hpp>
 #include <matrix_transformations.hpp>
 
 #define STB_IMAGE_IMPLEMENTATION
@@ -42,6 +44,50 @@ float vertices[] = {
   -0.5f,  0.5f, 0.0f,   1.0f, 1.0f, 0.0f,   0.0f, 1.0f    // top left 
 };
 
+float vertices2[] = {
+    -0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
+     0.5f, -0.5f, -0.5f,  1.0f, 0.0f,
+     0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
+     0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
+    -0.5f,  0.5f, -0.5f,  0.0f, 1.0f,
+    -0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
+
+    -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+     0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
+     0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
+     0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
+    -0.5f,  0.5f,  0.5f,  0.0f, 1.0f,
+    -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+
+    -0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+    -0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
+    -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+    -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+    -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+    -0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+
+     0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+     0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
+     0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+     0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+     0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+     0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+
+    -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+     0.5f, -0.5f, -0.5f,  1.0f, 1.0f,
+     0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
+     0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
+    -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+    -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+
+    -0.5f,  0.5f, -0.5f,  0.0f, 1.0f,
+     0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
+     0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+     0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+    -0.5f,  0.5f,  0.5f,  0.0f, 0.0f,
+    -0.5f,  0.5f, -0.5f,  0.0f, 1.0f
+};
+
 u32 indicies[] = {
   0, 1, 3,
   1, 2, 3
@@ -61,8 +107,8 @@ int main() {
   glfwSetErrorCallback([](int error, const char* description) {
     spdlog::error("GLFW Error ({}): {}", error, description);
   });
-  
-  GLFWwindow * window = glfwCreateWindow(800, 600, "Window", NULL, NULL);
+  u32 width = 800, height = 600;
+  GLFWwindow * window = glfwCreateWindow(width, height, "Window", NULL, NULL);
   if (window == nullptr) {
       spdlog::critical("Failed to create GLFW Window.");
       glfwTerminate();
@@ -81,19 +127,27 @@ int main() {
   });
 
   stbi_set_flip_vertically_on_load(true);
+  glEnable(GL_DEPTH_TEST);
 
-  unsigned int VAO[3];
-  glGenVertexArrays(3, VAO);
-  glBindVertexArray(VAO[0]);
+  unsigned int VAO[4];
+  glGenVertexArrays(4, VAO);
+  //glBindVertexArray(VAO[0]);
 
-  unsigned int VBO[3];
-  glGenBuffers(3, VBO);
+  unsigned int VBO[4];
+  glGenBuffers(4, VBO);
+  vertex::Array a{VAO[0], VBO[0]};
+  vertex::Array b{VAO[1], VBO[1]};
+  u32 x[1] = {3};
+  vertex::generate(a, sizeof(firstTriangle), firstTriangle, x, 1);
+  
+  /*
   glBindBuffer(GL_ARRAY_BUFFER, VBO[0]);
   glBufferData(GL_ARRAY_BUFFER, sizeof(firstTriangle), firstTriangle, GL_STATIC_DRAW);
   
   glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
   glEnableVertexAttribArray(0);
-
+  */
+  //this all needs cleaning up
   glBindVertexArray(VAO[1]);
 
   glBindBuffer(GL_ARRAY_BUFFER, VBO[1]);
@@ -105,7 +159,7 @@ int main() {
   glBindVertexArray(VAO[2]);
   glBindBuffer(GL_ARRAY_BUFFER, VBO[2]);
   glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-
+  
   u32 EBO;
   glGenBuffers(1, &EBO);
   glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
@@ -120,44 +174,85 @@ int main() {
   glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float)));
   glEnableVertexAttribArray(2);
 
+  glBindVertexArray(VAO[3]);
+  glBindBuffer(GL_ARRAY_BUFFER, VBO[3]);
+  glBufferData(GL_ARRAY_BUFFER, sizeof(vertices2), vertices2, GL_STATIC_DRAW);
+  
+  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
+  glEnableVertexAttribArray(0);
+  glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
+  glEnableVertexAttribArray(1);
+
+  //camera
+
+  vec3 cameraPosition = vec3{0.0f, 0.0f, 3.0f};
+  vec3 cameraTarget =   vec3{0.0f, 0.0f, 0.0f};
+  vec3 cameraDirection = maths::normalise(cameraPosition - cameraTarget);
+
   Texture texture = texture::load("resources/container.jpg");
   Texture texture2 = texture::load("resources/awesomeface.png");
 
   Shader shader = shader::compile("shaders/basic.vert", "shaders/basic.frag");
   Shader yellowShader = shader::compile("shaders/basic.vert", "shaders/basic_2.frag");
   Shader multiShader = shader::compile("shaders/position_colour.vert", "shaders/position_colour.frag");
+  Shader cube = shader::compile("shaders/cube.vert", "shaders/cube.frag");
+  
+  mat4 projection = mat4::setPerspective(maths::radians(45.0f), (float) width / (float) height, 0.1f, 100.0f);
+  mat4 model;
+  model = rotate(model, maths::radians(55.0f), vec3{1.0f, 0.0f, 0.0f});
+  mat4 view;
+  view = translate(view, vec3{0.0, 0.0f, -3.0f});
 
+  cube.use();
+  cube.setInt("texture1", 0);
+  cube.setInt("texture2", 1);
 
   multiShader.use();
+  multiShader.setInt("texture1", 0);
   multiShader.setInt("texture2", 1);
   //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
   
   while(!glfwWindowShouldClose(window)) {
       glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
-      glClear(GL_COLOR_BUFFER_BIT);
+      glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+      
       processInput(window);
 
-      mat4 trans{};
-      trans = translate(trans, vec3{0.5f, -0.5f, 0.0f});
-      trans = rotate(trans, (float)glfwGetTime() * 0.05, vec3{0.f, 0.f, 1.0f});
+      //model = translate(model, vec3{0.5f, -0.5f, 0.0f});
+      model = rotate(model, 0.05, vec3{1.0f, 1.0f, 0.0f});
+
+      glActiveTexture(GL_TEXTURE0);
+      texture.bind();
+      glActiveTexture(GL_TEXTURE1);
+      texture2.bind();
       
       shader.use();
       glBindVertexArray(VAO[0]);
       glDrawArrays(GL_TRIANGLES, 0, 3);
-
+      
       yellowShader.use();
       glBindVertexArray(VAO[1]);
       glDrawArrays(GL_TRIANGLES, 0, 3);
-      
+      /*
       multiShader.use();
-      multiShader.setMat4("transform", trans);
+      multiShader.setMat4("view", view);
+      multiShader.setMat4("model", model);
+      multiShader.setMat4("projection", projection);
       glActiveTexture(GL_TEXTURE0);
       texture.bind();
       glActiveTexture(GL_TEXTURE1);
       texture2.bind();
       glBindVertexArray(VAO[2]);
       glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
-   
+      */
+      cube.use();
+      mat4 view2 = translate(view, vec3{0.0, 0.0f, -3.0f});
+      cube.setMat4("view", view2);
+      cube.setMat4("model", model);
+      cube.setMat4("projection", projection);
+      glBindVertexArray(VAO[3]);
+      glDrawArrays(GL_TRIANGLES, 0, 36);
+
       glfwSwapBuffers(window);
       glfwPollEvents();
   }

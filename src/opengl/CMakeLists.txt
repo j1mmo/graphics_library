@@ -4,7 +4,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED on)
 add_executable(opengl
 	glad.c
 	main.cpp
-	
+	vertex_array.cpp	
 	shader.cpp
 	texture.cpp)
 
