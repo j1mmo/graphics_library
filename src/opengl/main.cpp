@@ -2,9 +2,9 @@
 #include <GLFW/glfw3.h>
 #include <spdlog/spdlog.h>
 
-#include "shader.hpp"
-#include "texture.hpp"
-#include "types.hpp"
+#include <shader.hpp>
+#include <texture.hpp>
+#include <types.hpp>
 
 #include <mat4.hpp>
 #include <vec4.hpp>
@@ -15,14 +15,25 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
 
-void processInput(GLFWwindow* window)
-{
-  if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
-      glfwSetWindowShouldClose(window, true);
-  }
-}
+float deltaTime = 0.0f;
+float lastFrame = 0.0f;
+
+float yaw = -90.0f;
+float pitch = 0.0f;
+
+void processInput(GLFWwindow* window);
 
 mat4 mat;
+
+vec3 cameraPos   = vec3(0.0f, 0.0f,  3.0f);
+vec3 cameraFront = vec3(0.0f, 0.0f, -1.0f);
+vec3 cameraUp    = vec3(0.0f, 1.0f,  0.0f);
+
+vec3 cameraPosition = vec3{0.0f, 0.0f, 3.0f};
+vec3 cameraTarget =   vec3{0.0f, 0.0f, 0.0f};
+vec3 cameraDirection = maths::normalise(cameraPosition - cameraTarget);
+
+float lastX = 400, lastY = 300;
 
 float firstTriangle[] = {
   -0.9f, -0.5f, 0.0f,  // left 
@@ -126,6 +137,40 @@ int main() {
     glViewport(0, 0, width, height);
   });
 
+  glfwSetCursorPosCallback(window, [](GLFWwindow* window, double xpos, double ypos) {
+    static bool firstMouse = true;
+    
+    if (firstMouse) {
+	lastX = xpos;
+	lastY = ypos;
+	firstMouse = false;
+    }
+    
+    float xOffset = xpos - lastX;
+    float yOffset = lastY - ypos;
+    lastX = xpos;
+    lastY = ypos;
+
+    const float sentivity = 0.1f;
+    xOffset *= sentivity;
+    yOffset *= sentivity;
+
+    yaw += xOffset;
+    pitch += yOffset;
+
+    if(pitch > 89.0f)
+      pitch =  89.0f;
+    if(pitch < -89.0f)
+      pitch = -89.0f;
+
+    vec3 direction;
+    direction[0] = cos(maths::radians(yaw)) * cos(maths::radians(pitch));
+    direction[1] = sin(maths::radians(pitch));
+    direction[2] = sin(maths::radians(yaw)) * cos(maths::radians(pitch));
+    cameraFront = maths::normalise(direction);
+  });
+  
+  glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED); 
   stbi_set_flip_vertically_on_load(true);
   glEnable(GL_DEPTH_TEST);
 
@@ -185,10 +230,6 @@ int main() {
 
   //camera
 
-  vec3 cameraPosition = vec3{0.0f, 0.0f, 3.0f};
-  vec3 cameraTarget =   vec3{0.0f, 0.0f, 0.0f};
-  vec3 cameraDirection = maths::normalise(cameraPosition - cameraTarget);
-
   Texture texture = texture::load("resources/container.jpg");
   Texture texture2 = texture::load("resources/awesomeface.png");
 
@@ -199,9 +240,10 @@ int main() {
   
   mat4 projection = mat4::setPerspective(maths::radians(45.0f), (float) width / (float) height, 0.1f, 100.0f);
   mat4 model;
-  model = rotate(model, maths::radians(55.0f), vec3{1.0f, 0.0f, 0.0f});
-  mat4 view;
-  view = translate(view, vec3{0.0, 0.0f, -3.0f});
+  //model = rotate(model, maths::radians(55.0f), vec3{1.0f, 0.0f, 0.0f});
+//  mat4 view;
+  
+    //view = translate(view, vec3{0.0, 0.0f, -3.0f});
 
   cube.use();
   cube.setInt("texture1", 0);
@@ -213,41 +255,26 @@ int main() {
   //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
   
   while(!glfwWindowShouldClose(window)) {
+
+      float currentFrame = glfwGetTime();
+      deltaTime = currentFrame - lastFrame;
+      lastFrame = currentFrame;  
       glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
       glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
       
       processInput(window);
 
       //model = translate(model, vec3{0.5f, -0.5f, 0.0f});
-      model = rotate(model, 0.05, vec3{1.0f, 1.0f, 0.0f});
+      //model = rotate(model, 0.05, vec3{1.0f, 1.0f, 0.0f});
 
       glActiveTexture(GL_TEXTURE0);
       texture.bind();
       glActiveTexture(GL_TEXTURE1);
       texture2.bind();
       
-      shader.use();
-      glBindVertexArray(VAO[0]);
-      glDrawArrays(GL_TRIANGLES, 0, 3);
-      
-      yellowShader.use();
-      glBindVertexArray(VAO[1]);
-      glDrawArrays(GL_TRIANGLES, 0, 3);
-      /*
-      multiShader.use();
-      multiShader.setMat4("view", view);
-      multiShader.setMat4("model", model);
-      multiShader.setMat4("projection", projection);
-      glActiveTexture(GL_TEXTURE0);
-      texture.bind();
-      glActiveTexture(GL_TEXTURE1);
-      texture2.bind();
-      glBindVertexArray(VAO[2]);
-      glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
-      */
       cube.use();
-      mat4 view2 = translate(view, vec3{0.0, 0.0f, -3.0f});
-      cube.setMat4("view", view2);
+      mat4 view = mat4::lookAt(cameraPos, cameraPos + cameraFront, cameraUp);
+      cube.setMat4("view", view);
       cube.setMat4("model", model);
       cube.setMat4("projection", projection);
       glBindVertexArray(VAO[3]);
@@ -259,4 +286,23 @@ int main() {
 
   glfwTerminate();
   return 0;
+}
+
+void processInput(GLFWwindow* window)
+{
+  if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
+      glfwSetWindowShouldClose(window, true);
+  }
+
+  
+
+  const float cameraSpeed = 2.5f * deltaTime;
+  if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
+    cameraPos += cameraSpeed * cameraFront;
+  if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
+    cameraPos -= cameraSpeed * cameraFront;
+  if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
+    cameraPos -= maths::normalise(maths::cross(cameraFront, cameraUp)) * cameraSpeed;
+  if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
+    cameraPos += maths::normalise(maths::cross(cameraFront, cameraUp)) * cameraSpeed;
 }

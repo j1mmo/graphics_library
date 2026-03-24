@@ -6,7 +6,8 @@ add_executable(opengl
 	main.cpp
 	vertex_array.cpp	
 	shader.cpp
-	texture.cpp)
+	texture.cpp
+	camera.cpp)
 
 target_include_directories(opengl PUBLIC
 				 ${CMAKE_CURRENT_SOURCE_DIR}/include)

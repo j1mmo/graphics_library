@@ -1,4 +1,4 @@
-#include "texture.hpp"
+#include <texture.hpp>
 
 #include <glad/glad.h>
 #include <spdlog/spdlog.h>
