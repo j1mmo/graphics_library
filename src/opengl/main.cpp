@@ -11,6 +11,7 @@
 #include <general.hpp>
 #include <vertex_array.hpp>
 #include <matrix_transformations.hpp>
+#include <camera.hpp>
 
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
@@ -18,20 +19,10 @@
 float deltaTime = 0.0f;
 float lastFrame = 0.0f;
 
-float yaw = -90.0f;
-float pitch = 0.0f;
-
 void processInput(GLFWwindow* window);
+void processKeyboard(GLFWwindow* window, double xpos, double ypos);
 
-mat4 mat;
-
-vec3 cameraPos   = vec3(0.0f, 0.0f,  3.0f);
-vec3 cameraFront = vec3(0.0f, 0.0f, -1.0f);
-vec3 cameraUp    = vec3(0.0f, 1.0f,  0.0f);
-
-vec3 cameraPosition = vec3{0.0f, 0.0f, 3.0f};
-vec3 cameraTarget =   vec3{0.0f, 0.0f, 0.0f};
-vec3 cameraDirection = maths::normalise(cameraPosition - cameraTarget);
+Camera camera{};
 
 float lastX = 400, lastY = 300;
 
@@ -115,9 +106,11 @@ int main() {
   glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
   glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
   glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+  
   glfwSetErrorCallback([](int error, const char* description) {
     spdlog::error("GLFW Error ({}): {}", error, description);
   });
+  
   u32 width = 800, height = 600;
   GLFWwindow * window = glfwCreateWindow(width, height, "Window", NULL, NULL);
   if (window == nullptr) {
@@ -137,38 +130,7 @@ int main() {
     glViewport(0, 0, width, height);
   });
 
-  glfwSetCursorPosCallback(window, [](GLFWwindow* window, double xpos, double ypos) {
-    static bool firstMouse = true;
-    
-    if (firstMouse) {
-	lastX = xpos;
-	lastY = ypos;
-	firstMouse = false;
-    }
-    
-    float xOffset = xpos - lastX;
-    float yOffset = lastY - ypos;
-    lastX = xpos;
-    lastY = ypos;
-
-    const float sentivity = 0.1f;
-    xOffset *= sentivity;
-    yOffset *= sentivity;
-
-    yaw += xOffset;
-    pitch += yOffset;
-
-    if(pitch > 89.0f)
-      pitch =  89.0f;
-    if(pitch < -89.0f)
-      pitch = -89.0f;
-
-    vec3 direction;
-    direction[0] = cos(maths::radians(yaw)) * cos(maths::radians(pitch));
-    direction[1] = sin(maths::radians(pitch));
-    direction[2] = sin(maths::radians(yaw)) * cos(maths::radians(pitch));
-    cameraFront = maths::normalise(direction);
-  });
+  glfwSetCursorPosCallback(window, processKeyboard);
   
   glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED); 
   stbi_set_flip_vertically_on_load(true);
@@ -240,10 +202,6 @@ int main() {
   
   mat4 projection = mat4::setPerspective(maths::radians(45.0f), (float) width / (float) height, 0.1f, 100.0f);
   mat4 model;
-  //model = rotate(model, maths::radians(55.0f), vec3{1.0f, 0.0f, 0.0f});
-//  mat4 view;
-  
-    //view = translate(view, vec3{0.0, 0.0f, -3.0f});
 
   cube.use();
   cube.setInt("texture1", 0);
@@ -258,14 +216,12 @@ int main() {
 
       float currentFrame = glfwGetTime();
       deltaTime = currentFrame - lastFrame;
-      lastFrame = currentFrame;  
+      lastFrame = currentFrame;
+      
       glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
       glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
       
       processInput(window);
-
-      //model = translate(model, vec3{0.5f, -0.5f, 0.0f});
-      //model = rotate(model, 0.05, vec3{1.0f, 1.0f, 0.0f});
 
       glActiveTexture(GL_TEXTURE0);
       texture.bind();
@@ -273,7 +229,7 @@ int main() {
       texture2.bind();
       
       cube.use();
-      mat4 view = mat4::lookAt(cameraPos, cameraPos + cameraFront, cameraUp);
+      mat4 view = camera.getView();
       cube.setMat4("view", view);
       cube.setMat4("model", model);
       cube.setMat4("projection", projection);
@@ -294,15 +250,29 @@ void processInput(GLFWwindow* window)
       glfwSetWindowShouldClose(window, true);
   }
 
-  
-
-  const float cameraSpeed = 2.5f * deltaTime;
   if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
-    cameraPos += cameraSpeed * cameraFront;
+    camera.processKeyboard(Camera::movement::forward, deltaTime);
   if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
-    cameraPos -= cameraSpeed * cameraFront;
+    camera.processKeyboard(Camera::movement::backwards, deltaTime);
   if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
-    cameraPos -= maths::normalise(maths::cross(cameraFront, cameraUp)) * cameraSpeed;
+    camera.processKeyboard(Camera::movement::left, deltaTime);
   if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
-    cameraPos += maths::normalise(maths::cross(cameraFront, cameraUp)) * cameraSpeed;
+    camera.processKeyboard(Camera::movement::right, deltaTime);
+}
+
+void processKeyboard(GLFWwindow* window, double xpos, double ypos) {
+    static bool firstMouse = true;
+    
+    if (firstMouse) {
+	lastX = xpos;
+	lastY = ypos;
+	firstMouse = false;
+    }
+    
+    float xOffset = xpos - lastX;
+    float yOffset = lastY - ypos;
+    lastX = xpos;
+    lastY = ypos;
+    
+    camera.processMouseMovement(xOffset, yOffset);
 }
