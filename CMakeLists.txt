@@ -12,5 +12,6 @@ set(BUILD_TESTS OFF CACHE BOOL "Disable building tests" FORCE)
 
 add_subdirectory(external/spdlog)
 add_subdirectory(external/mathslib)
+add_subdirectory(external/dsa)
 add_subdirectory(src)
 

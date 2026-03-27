@@ -7,13 +7,15 @@ add_executable(opengl
 	vertex_array.cpp	
 	shader.cpp
 	texture.cpp
-	camera.cpp)
+	camera.cpp
+	mesh.cpp)
 
 target_include_directories(opengl PUBLIC
 				 ${CMAKE_CURRENT_SOURCE_DIR}/include)
 
 target_include_directories(opengl PRIVATE
 				  ${CMAKE_SOURCE_DIR}/external/spdlog/include
-				  ${CMAKE_SOURCE_DIR}/external/maths/src/maths/include)
+				  ${CMAKE_SOURCE_DIR}/external/maths/src/maths/include
+				  ${CMAKE_SOURCE_DIR}/external/dsa/src/dsa/include)
 
-target_link_libraries(opengl PUBLIC spdlog::spdlog_header_only PRIVATE maths glfw dl)
+target_link_libraries(opengl PUBLIC spdlog::spdlog_header_only PRIVATE dsa maths glfw dl)
