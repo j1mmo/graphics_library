@@ -4,3 +4,6 @@
 [submodule "mathslib"]
 	path = external/mathslib
 	url = git@github.com:j1mmo/mathslib.git
+[submodule "dsa"]
+	path = external/dsa
+	url = git@github.com:j1mmo/dsa.git
