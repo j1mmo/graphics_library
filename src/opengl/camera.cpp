@@ -34,12 +34,12 @@ void Camera::processKeyboard(movement direction, float deltaTime)
   }
 
 }
-#include <cstdio>
+
 void Camera::processMouseMovement(float xOffset, float yOffset, bool constrainPitch)
 {
   xOffset *= _mouseSensitivity;
   yOffset *= _mouseSensitivity;
-  printf("%f, %f\n", xOffset, yOffset);
+
   _yaw += xOffset;
   _pitch += yOffset;
 
