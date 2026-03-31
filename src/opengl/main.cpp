@@ -28,48 +28,48 @@ Camera camera{};
 
 float lastX = 400, lastY = 300;
 
-array<float, 216> vertices3 = {
-    -0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
-     0.5f, -0.5f, -0.5f,  1.0f, 0.0f,
-     0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-     0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-    -0.5f,  0.5f, -0.5f,  0.0f, 1.0f,
-    -0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
+array<float, 252> vertices3 = {
+    -0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
+     0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f, 
+     0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f, 
+     0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f, 
+    -0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f, 
+    -0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f, 
 
-    -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-     0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
-     0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
-     0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
-    -0.5f,  0.5f,  0.5f,  0.0f, 1.0f,
-    -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+    -0.5f, -0.5f,  0.5f,  0.0f,  0.0f, 1.0f,
+     0.5f, -0.5f,  0.5f,  0.0f,  0.0f, 1.0f,
+     0.5f,  0.5f,  0.5f,  0.0f,  0.0f, 1.0f,
+     0.5f,  0.5f,  0.5f,  0.0f,  0.0f, 1.0f,
+    -0.5f,  0.5f,  0.5f,  0.0f,  0.0f, 1.0f,
+    -0.5f, -0.5f,  0.5f,  0.0f,  0.0f, 1.0f,
 
-    -0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-    -0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-    -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-    -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-    -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-    -0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+    -0.5f,  0.5f,  0.5f, -1.0f,  0.0f,  0.0f,
+    -0.5f,  0.5f, -0.5f, -1.0f,  0.0f,  0.0f,
+    -0.5f, -0.5f, -0.5f, -1.0f,  0.0f,  0.0f,
+    -0.5f, -0.5f, -0.5f, -1.0f,  0.0f,  0.0f,
+    -0.5f, -0.5f,  0.5f, -1.0f,  0.0f,  0.0f,
+    -0.5f,  0.5f,  0.5f, -1.0f,  0.0f,  0.0f,
 
-     0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-     0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-     0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-     0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-     0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-     0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+     0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f,
+     0.5f,  0.5f, -0.5f,  1.0f,  0.0f,  0.0f,
+     0.5f, -0.5f, -0.5f,  1.0f,  0.0f,  0.0f,
+     0.5f, -0.5f, -0.5f,  1.0f,  0.0f,  0.0f,
+     0.5f, -0.5f,  0.5f,  1.0f,  0.0f,  0.0f,
+     0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f,
 
-    -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-     0.5f, -0.5f, -0.5f,  1.0f, 1.0f,
-     0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
-     0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
-    -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-    -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+    -0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,
+     0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,
+     0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,
+     0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,
+    -0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,
+    -0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,
 
-    -0.5f,  0.5f, -0.5f,  0.0f, 1.0f,
-     0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-     0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-     0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-    -0.5f,  0.5f,  0.5f,  0.0f, 0.0f,
-    -0.5f,  0.5f, -0.5f,  0.0f, 1.0f
+    -0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,
+     0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,
+     0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,
+     0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,
+    -0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,
+    -0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f
 };
 
 i32 getMaximumVertexAttributes() {
@@ -119,55 +119,65 @@ int main() {
   unsigned int VBO[4];
   glGenBuffers(4, VBO);
 
-  Mesh::Attributes att { .strideLength = 5, .data = { 3, 2 }};
+  Mesh::Attributes att {
+    .strideLength = 6,
+    .data = { 3, 2 }
+  };
   Mesh mesh = {VAO[3], VBO[3], 0};
   Mesh::generate(mesh, vertices3, att);
 
   Texture texture = texture::load("resources/container.jpg");
   Texture texture2 = texture::load("resources/awesomeface.png");
 
-  Shader shader = shader::compile("shaders/basic.vert", "shaders/basic.frag");
-  Shader yellowShader = shader::compile("shaders/basic.vert", "shaders/basic_2.frag");
-  Shader multiShader = shader::compile("shaders/position_colour.vert", "shaders/position_colour.frag");
-  Shader cube = shader::compile("shaders/cube.vert", "shaders/cube.frag");
+  Shader colour = shader::compile("shaders/lighting.vert", "shaders/lighting.frag");
+  Shader light    = shader::compile("shaders/light.vert", "shaders/light.frag");
   
   mat4 projection = mat4::setPerspective(maths::radians(45.0f), (float) width / (float) height, 0.1f, 100.0f);
-  mat4 model;
-  model = translate(model, vec3{0.0f, 0.0f, -3.0f});
+  
 
-  cube.use();
-  cube.setInt("texture1", 0);
-  cube.setInt("texture2", 1);
-
-  multiShader.use();
-  multiShader.setInt("texture1", 0);
-  multiShader.setInt("texture2", 1);
   //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+
+  vec3 lightPos(1.2f, 1.0f, 2.0f);
   
   while(!glfwWindowShouldClose(window)) {
 
       float currentFrame = glfwGetTime();
       deltaTime = currentFrame - lastFrame;
       lastFrame = currentFrame;
+
+      processInput(window);
       
       glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
       glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-      
-      processInput(window);
 
-      glActiveTexture(GL_TEXTURE0);
-      texture.bind();
-      glActiveTexture(GL_TEXTURE1);
-      texture2.bind();
-      
-      cube.use();
       mat4 view = camera.getView();
-      cube.setMat4("view", view);
-      cube.setMat4("model", model);
-      cube.setMat4("projection", projection);
+      mat4 model;
+      model = translate(model, vec3{0.0f, 0.0f, -3.0f});
+      
+      colour.use();
+      colour.setVec3("objectColor", 1.0f, 0.5f, 0.31f);
+      colour.setVec3("lightColor",  1.0f, 1.0f, 1.0f);
+
+      colour.setMat4("view", view);
+      colour.setMat4("model", model);
+      colour.setMat4("projection", projection);
+
+      glBindVertexArray(VAO[3]);
+      glDrawArrays(GL_TRIANGLES, 0, 36);
+      
+      light.use();
+
+      model = mat4{};
+      model = translate(model, lightPos);
+      model = scale(model, vec3{0.2f, 0.2f, 0.2f});
+      light.setMat4("view", view);
+      light.setMat4("model", model);
+      light.setMat4("projection", projection);
+
       glBindVertexArray(VAO[3]);
       glDrawArrays(GL_TRIANGLES, 0, 36);
 
+      
       glfwSwapBuffers(window);
       glfwPollEvents();
   }

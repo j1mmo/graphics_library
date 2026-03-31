@@ -83,7 +83,7 @@ bool ShaderCompilationStatus(i32 shader, const char* shaderFileName)
       char* error = (char*) malloc(len + 1);
       glGetShaderInfoLog(shader, len, &status, error);
       error[len] = '\0';
-      spdlog::error("unable to compile shader: {}", error);
+      spdlog::error("unable to compile shader {}, error: {}", shaderFileName, error);
       free(error);
       return false;
   }
