@@ -28,7 +28,7 @@ Camera camera{};
 
 float lastX = 400, lastY = 300;
 
-array<float, 252> vertices3 = {
+darray<float> vertices3 = {
     -0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
      0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f, 
      0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f, 
@@ -113,18 +113,31 @@ int main() {
   stbi_set_flip_vertically_on_load(true);
   glEnable(GL_DEPTH_TEST);
 
-  unsigned int VAO[4];
-  glGenVertexArrays(4, VAO);
+  unsigned int VAO[2];
+  glGenVertexArrays(2, VAO);
 
-  unsigned int VBO[4];
-  glGenBuffers(4, VBO);
+  unsigned int VBO[1];
+  glGenBuffers(1, VBO);
 
-  Mesh::Attributes att {
+  Mesh::Attributes objAttribute {
     .strideLength = 6,
-    .data = { 3, 2 }
+    .data = { 3, 3 }
   };
-  Mesh mesh = {VAO[3], VBO[3], 0};
-  Mesh::generate(mesh, vertices3, att);
+
+  Mesh::Attributes lightAttribute {
+    .strideLength = 6,
+    .data = { 3 }
+  };
+  
+  //Mesh mesh = {VAO[3], VBO[3], 0};
+  //Mesh::generate(mesh, vertices3, att);
+
+  Mesh::bindVAO(VAO[0]);
+  Mesh::bindVBO(VBO[0], vertices3);
+  Mesh::setVertexAttributes(VBO[0], objAttribute);
+  Mesh::bindVAO(VAO[1]);
+  Mesh::bindVBO(VBO[0]);
+  Mesh::setVertexAttributes(VBO[1], lightAttribute);
 
   Texture texture = texture::load("resources/container.jpg");
   Texture texture2 = texture::load("resources/awesomeface.png");
@@ -134,7 +147,6 @@ int main() {
   
   mat4 projection = mat4::setPerspective(maths::radians(45.0f), (float) width / (float) height, 0.1f, 100.0f);
   
-
   //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
   vec3 lightPos(1.2f, 1.0f, 2.0f);
@@ -155,14 +167,21 @@ int main() {
       model = translate(model, vec3{0.0f, 0.0f, -3.0f});
       
       colour.use();
-      colour.setVec3("objectColor", 1.0f, 0.5f, 0.31f);
-      colour.setVec3("lightColor",  1.0f, 1.0f, 1.0f);
+      colour.setVec3("light.ambient",  0.2f, 0.2f, 0.2f);
+      colour.setVec3("light.diffuse",  0.5f, 0.5f, 0.5f);
+      colour.setVec3("light.specular", 1.0f, 1.0f, 1.0f); 
+      colour.setVec3("viewPos", camera._position);
+
+      colour.setVec3("material.ambient", 1.0f, 0.5f, 0.31f);
+      colour.setVec3("material.diffuse", 1.0f, 0.5f, 0.31f);
+      colour.setVec3("material.specular", 0.5f, 0.5f, 0.5f);
+      colour.setFloat("material.shininess", 32.0f);
 
       colour.setMat4("view", view);
       colour.setMat4("model", model);
       colour.setMat4("projection", projection);
 
-      glBindVertexArray(VAO[3]);
+      glBindVertexArray(VAO[0]);
       glDrawArrays(GL_TRIANGLES, 0, 36);
       
       light.use();
@@ -174,7 +193,7 @@ int main() {
       light.setMat4("model", model);
       light.setMat4("projection", projection);
 
-      glBindVertexArray(VAO[3]);
+      glBindVertexArray(VAO[1]);
       glDrawArrays(GL_TRIANGLES, 0, 36);
 
       

@@ -5,19 +5,18 @@
 
 #include "types.hpp"
 
-#include <array.hpp>
+#include <darray.hpp>
 
 struct Mesh {
 
   struct Attributes {
     u32 strideLength;
-    array<u32, 2> data;
+    darray<u32> data;
   };
+  
   u32 vao{0}, vbo{0}, ebo{0};
 
-
-  template<u32 dataSize> static
-  void generate(const Mesh& mesh, const array<float, dataSize>& data, const Attributes& attributes) {
+  static void generate(const Mesh& mesh, const darray<float> data, const Attributes& attributes) {
     glBindVertexArray(mesh.vao);
     glBindBuffer(GL_ARRAY_BUFFER, mesh.vbo);
     glBufferData(GL_ARRAY_BUFFER, sizeof(float) * data.size(), data._data, GL_STATIC_DRAW);
@@ -33,14 +32,20 @@ struct Mesh {
     glEnableVertexAttribArray(index);
   }
 
-  template<u32 dataSize> static
-  void bindVBO(const u32 vbo, const array<float, dataSize>& data) {
+  static void bindVAO(const u32 vao) {
+     glBindVertexArray(vao);
+  }
+
+  static void bindVBO(const u32 vbo) {
+    glBindBuffer(GL_ARRAY_BUFFER, vbo);
+  }
+
+  static void bindVBO(const u32 vbo, const darray<float>& data) {
     glBindBuffer(GL_ARRAY_BUFFER, vbo);
     glBufferData(GL_ARRAY_BUFFER, sizeof(float) * data.size(), data._data, GL_STATIC_DRAW);
   }
 
-  template<u32 dataSize> static
-  void setVertexAttribues(const u32 vbo, const Attributes& attributes) {
+  static void setVertexAttributes(const u32 vbo, const Attributes& attributes) {
     i32 offsetCounter{0}, index{0};
     
     for (const u32 attributeSize : attributes.data) {
