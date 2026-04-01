@@ -111,7 +111,6 @@ struct Shader {
   void setMaterial(const Material& material) const {
     setFloat("material.shininess", material._shininess);
     setVec3("material.diffuse",  material._diffuse);
-    setVec3("material.specular", material._specular); 
   }
 
   void release() {

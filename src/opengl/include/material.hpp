@@ -8,8 +8,6 @@
 struct Material {
   f32  _shininess;
   vec3 _diffuse;
-  vec3 _specular;
-
 };
 
 #endif // MATERIAL_HPP

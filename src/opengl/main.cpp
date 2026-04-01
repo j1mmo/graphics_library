@@ -137,12 +137,15 @@ int main() {
   Mesh::bindVBO(VBO[0]);
   Mesh::setVertexAttributes(VBO[1], lightAttribute);
 
-  Texture texture = texture::load("resources/container.jpg");
-  Texture texture2 = texture::load("resources/awesomeface.png");
+  Texture woodenBox = texture::load("resources/container2.png");
+  Texture specularMap = texture::load("resources/container2_specular.png");
 
   Shader colour = shader::compile("shaders/lighting.vert", "shaders/lighting.frag");
-  colour.setInt("material.diffuse", 0);
   Shader light    = shader::compile("shaders/light.vert", "shaders/light.frag");
+
+  colour.use();
+  colour.setInt("material.diffuse", 0);
+  colour.setInt("material.specular", 1);
   
   mat4 projection = mat4::setPerspective(maths::radians(45.0f), (float) width / (float) height, 0.1f, 100.0f);
   
@@ -157,8 +160,7 @@ int main() {
 
   Material material = {
     ._shininess = { 32.0f },
-    ._diffuse   = { 1.0f, 0.5f, 0.31f},
-    ._specular  = { 0.5f, 0.5f, 0.5f }
+    ._diffuse   = { 1.0f, 0.5f, 0.31f}
   };
   
   while(!glfwWindowShouldClose(window)) {
@@ -182,7 +184,9 @@ int main() {
       colour.setMaterial(material);
 
       glActiveTexture(GL_TEXTURE0);
-      texture.bind();
+      woodenBox.bind();
+      glActiveTexture(GL_TEXTURE1);
+      specularMap.bind();
 
       colour.setMat4("view", view);
       colour.setMat4("model", model);
