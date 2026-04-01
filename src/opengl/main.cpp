@@ -149,7 +149,19 @@ int main() {
   
   //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
-  vec3 lightPos(1.2f, 1.0f, 2.0f);
+  Light lightData = {
+    ._position = { 1.2f, 1.0f, 2.0f },
+    ._ambient  = { 0.2f, 0.2f, 0.2f },
+    ._diffuse  = { 0.5f, 0.5f, 0.5f },
+    ._specular = { 1.0f, 1.0f, 1.0f }
+  };
+
+  Material material = {
+    ._shininess = { 32.0f },
+    ._ambient   = { 1.0f, 0.5f, 0.31f },
+    ._diffuse   = { 1.0f, 0.5f, 0.31f},
+    ._specular  = { 0.5f, 0.5f, 0.5f }
+  };
   
   while(!glfwWindowShouldClose(window)) {
 
@@ -167,15 +179,9 @@ int main() {
       model = translate(model, vec3{0.0f, 0.0f, -3.0f});
       
       colour.use();
-      colour.setVec3("light.ambient",  0.2f, 0.2f, 0.2f);
-      colour.setVec3("light.diffuse",  0.5f, 0.5f, 0.5f);
-      colour.setVec3("light.specular", 1.0f, 1.0f, 1.0f); 
+      colour.setLight(lightData);
       colour.setVec3("viewPos", camera._position);
-
-      colour.setVec3("material.ambient", 1.0f, 0.5f, 0.31f);
-      colour.setVec3("material.diffuse", 1.0f, 0.5f, 0.31f);
-      colour.setVec3("material.specular", 0.5f, 0.5f, 0.5f);
-      colour.setFloat("material.shininess", 32.0f);
+      colour.setMaterial(material);
 
       colour.setMat4("view", view);
       colour.setMat4("model", model);
@@ -187,7 +193,7 @@ int main() {
       light.use();
 
       model = mat4{};
-      model = translate(model, lightPos);
+      model = translate(model, lightData._position);
       model = scale(model, vec3{0.2f, 0.2f, 0.2f});
       light.setMat4("view", view);
       light.setMat4("model", model);

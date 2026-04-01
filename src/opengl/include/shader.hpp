@@ -6,12 +6,15 @@
 #include <spdlog/spdlog.h>
 
 #include "types.hpp"
+#include "light.hpp"
+#include "material.hpp"
+
 #include <vec3.hpp>
 #include <vec4.hpp>
 #include <mat4.hpp>
 
 struct Shader {
-  uint handle;
+  u32 handle;
 
   void use() const {
     glUseProgram(handle);
@@ -95,6 +98,21 @@ struct Shader {
     setMat4("view", view);
     setMat4("model", model);
     setMat4("projection", projection);
+  }
+  
+  //needs updating perhaps for difference variable names - also material
+  void setLight(const Light& light) const {
+    setVec3("light.position", light._position);
+    setVec3("light.ambient",  light._ambient);
+    setVec3("light.diffuse",  light._diffuse);
+    setVec3("light.specular", light._specular); 
+  }
+
+  void setMaterial(const Material& material) const {
+    setFloat("material.shininess", material._shininess);
+    setVec3("material.ambient",  material._ambient);
+    setVec3("material.diffuse",  material._diffuse);
+    setVec3("material.specular", material._specular); 
   }
 
   void release() {
