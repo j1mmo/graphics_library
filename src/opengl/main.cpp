@@ -5,7 +5,7 @@
 #include <shader.hpp>
 #include <texture.hpp>
 #include <types.hpp>
-
+#include <array.hpp>
 #include <mat4.hpp>
 #include <vec4.hpp>
 #include <general.hpp>
@@ -151,16 +151,49 @@ int main() {
   
   //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
-  Light lightData = {
-    ._position = { 1.2f, 1.0f, 2.0f },
+  DirectionalLight lightData = {
+    ._direction = { 1.2f, 1.0f, 2.0f },
     ._ambient  = { 0.2f, 0.2f, 0.2f },
     ._diffuse  = { 0.5f, 0.5f, 0.5f },
     ._specular = { 1.0f, 1.0f, 1.0f }
   };
+  
+  PointLight pointLight = {
+      ._position = { 1.2f, 1.0f, 2.0f },
+      ._ambient  = { 0.2f, 0.2f, 0.2f },
+      ._diffuse  = { 0.5f, 0.5f, 0.5f },
+      ._specular = { 1.0f, 1.0f, 1.0f },
 
+      ._constant  = 1.0f,
+      ._linear    = 0.09f,
+      ._quadratic = 0.032f
+  };
+
+  
+  
   Material material = {
     ._shininess = { 32.0f },
     ._diffuse   = { 1.0f, 0.5f, 0.31f}
+  };
+
+  array<vec3, 4> pointLightPositions {
+    { 0.7f,  0.2f,  2.0f},
+    { 2.3f, -3.3f, -4.0f},
+    {-4.0f,  2.0f, -12.0f},
+    { 0.0f,  0.0f, -3.0f}
+  };
+
+  array<vec3, 10> cubePositions = {
+    { 0.0f,  0.0f,  0.0f},
+    { 2.0f,  5.0f, -15.0f},
+    {-1.5f, -2.2f, -2.5f},
+    {-3.8f, -2.0f, -12.3f},
+    { 2.4f, -0.4f, -3.5f},
+    {-1.7f,  3.0f, -7.5f},
+    { 1.3f, -2.0f, -2.5f},
+    { 1.5f,  2.0f, -2.5f},
+    { 1.5f,  0.2f, -1.5f},
+    {-1.3f,  1.0f, -1.5f}
   };
   
   while(!glfwWindowShouldClose(window)) {
@@ -175,11 +208,17 @@ int main() {
       glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
       mat4 view = camera.getView();
-      mat4 model;
-      model = translate(model, vec3{0.0f, 0.0f, -3.0f});
+
+      FlashLight flashLight = {
+	._position    = {camera._position},
+	._direction   = {camera._front},
+	._cutOff      = cosf(maths::radians(12.5f)),
+	._outerCutOff = cosf(maths::radians(17.5f))
+      };
       
       colour.use();
-      colour.setLight(lightData);
+      
+      colour.setLight(pointLight, pointLightPositions);
       colour.setVec3("viewPos", camera._position);
       colour.setMaterial(material);
 
@@ -189,16 +228,25 @@ int main() {
       specularMap.bind();
 
       colour.setMat4("view", view);
-      colour.setMat4("model", model);
       colour.setMat4("projection", projection);
 
       glBindVertexArray(VAO[0]);
-      glDrawArrays(GL_TRIANGLES, 0, 36);
+
+      for (u32 i{0}; i < 10; i++) {
+	  mat4 model;
+	  model = translate(model, cubePositions[i]);
+	  float angle = 20.0f * i;
+	  model = rotate(model, maths::radians(angle), vec3{1.0f, 0.3f, 0.5});
+	  colour.setMat4("model", model);
+
+	  glDrawArrays(GL_TRIANGLES, 0, 36);
+      }
       
+      mat4 model;
       light.use();
 
       model = mat4{};
-      model = translate(model, lightData._position);
+      model = translate(model, lightData._direction);
       model = scale(model, vec3{0.2f, 0.2f, 0.2f});
       light.setMat4("view", view);
       light.setMat4("model", model);
@@ -206,7 +254,6 @@ int main() {
 
       glBindVertexArray(VAO[1]);
       glDrawArrays(GL_TRIANGLES, 0, 36);
-
       
       glfwSwapBuffers(window);
       glfwPollEvents();
