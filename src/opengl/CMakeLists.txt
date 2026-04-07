@@ -8,7 +8,8 @@ add_executable(opengl
 	shader.cpp
 	texture.cpp
 	camera.cpp
-	mesh.cpp)
+	mesh.cpp
+	object3d.cpp)
 
 target_include_directories(opengl PUBLIC
 				 ${CMAKE_CURRENT_SOURCE_DIR}/include)
