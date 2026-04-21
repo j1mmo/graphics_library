@@ -7,13 +7,13 @@
 #include <vec4.hpp>
 #include <darray.hpp>
 
-void object3d::loadObject3d(const char* filename)
+object3d::data object3d::loadObject3d(const char* filename)
 {
   FILE* file = nullptr;
   file = fopen(filename, "rb");
   if (!file) {
       perror("failed to load file");
-      return;
+      return {};
   }
   
   char buffer[256]{'\0'};
@@ -44,7 +44,7 @@ void object3d::loadObject3d(const char* filename)
     
 	  char * ptr = buffer + 1;
 	  u32 counter{0};
-	  vec4 faces{};
+	  vec4 f{};
 	  
 	  while((*ptr) != '\0') {
 
@@ -54,7 +54,7 @@ void object3d::loadObject3d(const char* filename)
 	      } else {
 		  char* end;
 		  float val = strtod(ptr, &end);
-		  faces[counter++] = val;
+		  f[counter++] = val;
 	      
 		  if (ptr == end) {
 		      ptr++;
@@ -65,14 +65,26 @@ void object3d::loadObject3d(const char* filename)
 	      }
 	  }
 
-	  //if 4 faces edge case
-	  if (counter == 3) {
-	      //TODO: start here
+	  //if more than 3 faces edge case
+	  if (counter > 2) {
+	      int count = counter - 2;
+	      for (int i = 0; i < count; i++) {
+		  int last = counter + 2;
+		  faces.push(vec3{f[0] - 1, f[1] - 1, f[last] - 1});
+	      }
+	  }
+	  else {
+	      faces.push(vec3{f[0] - 1, f[1] - 1, f[2] - 1});
 	  }
       }
   }
 
-  
-
   fclose(file);
+
+  return data {
+    ._vertices = vertices,
+    ._normals = normals,
+    ._texCoords = texCoords,
+    ._faces = faces
+  };
 }

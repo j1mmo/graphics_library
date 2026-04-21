@@ -78,7 +78,14 @@ i32 getMaximumVertexAttributes() {
   glGetIntegerv(GL_MAX_VERTEX_ATTRIBS, &nrAttributes);
   return nrAttributes;
 }
+/*
+#include <object3d.hpp>
 
+int main() {
+  object3d::data d =object3d::loadObject3d("resources/obj/pyramid.obj");
+  
+}
+*/
 int main() {
   glfwInit();
   glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
@@ -89,7 +96,7 @@ int main() {
     spdlog::error("GLFW Error ({}): {}", error, description);
   });
   
-  u32 width = 800, height = 600;
+  u32 width = 1920, height = 1080;
   GLFWwindow * window = glfwCreateWindow(width, height, "Window", NULL, NULL);
   if (window == nullptr) {
       spdlog::critical("Failed to create GLFW Window.");
