@@ -1,7 +1,6 @@
 #include <camera.hpp>
 
 #include <general.hpp>
-
 #include <cmath>
 
 Camera::Camera(vec3 position, vec3 up, float yaw, float pitch)

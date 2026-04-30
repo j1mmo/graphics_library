@@ -6,7 +6,7 @@
 
 struct Camera {
   static constexpr float YAW         = -90.0f;
-  static constexpr float PITCH       =  0.0f;
+  static constexpr float PITCH       =  -80.0f;
   static constexpr float SPEED       =  2.5f;
   static constexpr float SENSITIVITY =  0.1f;
   static constexpr float ZOOM        =  45.0f;
@@ -31,7 +31,7 @@ struct Camera {
   float _mouseSensitivity;
   float _zoom;
 
-  Camera(vec3 position = vec3(0.0f, 0.0f, 0.0f), vec3 up = vec3(0.0f, 1.0f, 0.0f), float yaw = Camera::YAW, float pitch = Camera::PITCH);
+  Camera(vec3 position = vec3(3.2863748, 12.975187, 4.943796), vec3 up = vec3(0.0f, 1.0f, 0.0f), float yaw = Camera::YAW, float pitch = Camera::PITCH);
   void processKeyboard(movement direction, float deltaTime);
   void processMouseMovement(float xOffset, float yOffset, bool constrainPitch = true);
   void changeFov(float offset);

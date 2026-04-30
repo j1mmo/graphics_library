@@ -2,59 +2,45 @@
 #define MASH_HPP
 
 #include <glad/glad.h>
-
-#include "types.hpp"
-
 #include <darray.hpp>
 
-struct Mesh {
+#include "types.hpp"
+#include "snake.hpp"
+
+namespace mesh {
 
   struct Attributes {
     u32 strideLength;
     darray<u32> data;
   };
+
+  struct Handles {
+    u32 vao{0};
+    u32 vbo{0};
+    u32 ebo{0};
+    u32 drawElementsCount{0};
+  };
   
-  u32 vao{0}, vbo{0}, ebo{0};
+  void generate_vao(const mesh::Handles& handle);
+  void generate_ebo_stream(const mesh::Handles& handle, const darray<u32>& indicies);
+  void generate_vbo_stream(const mesh::Handles& handle, const darray<float>& data);
+  void generate_ebo(const mesh::Handles& handle, const darray<u32>& indicies);
+  void generate_vbo(const mesh::Handles& handle, const darray<float>& data);
 
-  static void generate(const Mesh& mesh, const darray<float> data, const Attributes& attributes) {
-    glBindVertexArray(mesh.vao);
-    glBindBuffer(GL_ARRAY_BUFFER, mesh.vbo);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(float) * data.size(), data._data, GL_STATIC_DRAW);
-
-    i32 offsetCounter{0}, index{0};
-    for (const u32 attributeSize : attributes.data) {
-	glVertexAttribPointer(index, attributeSize, GL_FLOAT, GL_FALSE, attributes.strideLength * sizeof(float), (void*) (offsetCounter * sizeof(float)));
-	glEnableVertexAttribArray(index);
-	offsetCounter += attributeSize;
-	index++;
-    }
-
-    glEnableVertexAttribArray(index);
-  }
-
-  static void bindVAO(const u32 vao) {
-     glBindVertexArray(vao);
-  }
-
-  static void bindVBO(const u32 vbo) {
-    glBindBuffer(GL_ARRAY_BUFFER, vbo);
-  }
-
-  static void bindVBO(const u32 vbo, const darray<float>& data) {
-    glBindBuffer(GL_ARRAY_BUFFER, vbo);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(float) * data.size(), data._data, GL_STATIC_DRAW);
-  }
-
-  static void setVertexAttributes(const u32 vbo, const Attributes& attributes) {
-    i32 offsetCounter{0}, index{0};
-    
-    for (const u32 attributeSize : attributes.data) {
-	glVertexAttribPointer(index, attributeSize, GL_FLOAT, GL_FALSE, attributes.strideLength * sizeof(float), (void*) (offsetCounter * sizeof(float)));
-	glEnableVertexAttribArray(index);
-	offsetCounter += attributeSize;
-	index++;
-    }
-  }
+  void generate_vertex_array_attributes(const mesh::Handles& mesh, const darray<float> data, const Attributes& attributes);
+  void set_vertex_attributes(const Attributes& attributes);
+  
+  void bind_vao(const mesh::Handles& handle);
+  void bind_vbo(const mesh::Handles& handle);
+  void bind_ebo(const mesh::Handles& handle);
+  
+  void draw_element_array(const mesh::Handles& mesh);
+  void draw_vertex_arrays(const mesh::Handles& mesh);
+ 
+  void generate_square(mesh::Handles& mesh);
+  void generate_tube(mesh::Handles& mesh, const snake::Player& player);
+  void generate_outer(mesh::Handles& mesh);
+  void generate_circle(mesh::Handles& mesh);
 };
 
 #endif // MASH_HPP

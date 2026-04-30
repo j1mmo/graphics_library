@@ -2,6 +2,10 @@
 #include <GLFW/glfw3.h>
 #include <spdlog/spdlog.h>
 
+#include <imgui.h>
+#include <backends/imgui_impl_glfw.h>
+#include <backends/imgui_impl_opengl3.h>
+
 #include <shader.hpp>
 #include <texture.hpp>
 #include <types.hpp>
@@ -12,7 +16,7 @@
 #include <vertex_array.hpp>
 #include <matrix_transformations.hpp>
 #include <camera.hpp>
-
+#include <snake.hpp>
 #include <mesh.hpp>
 
 #define STB_IMAGE_IMPLEMENTATION
@@ -27,6 +31,8 @@ void processKeyboard(GLFWwindow* window, double xpos, double ypos);
 Camera camera{};
 
 float lastX = 400, lastY = 300;
+
+snake::game_state gameState;
 
 darray<float> vertices = {
   // positions          // normals           // texture coords
@@ -78,14 +84,7 @@ i32 getMaximumVertexAttributes() {
   glGetIntegerv(GL_MAX_VERTEX_ATTRIBS, &nrAttributes);
   return nrAttributes;
 }
-/*
-#include <object3d.hpp>
 
-int main() {
-  object3d::data d =object3d::loadObject3d("resources/obj/pyramid.obj");
-  
-}
-*/
 int main() {
   glfwInit();
   glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
@@ -116,40 +115,117 @@ int main() {
   });
 
   glfwSetCursorPosCallback(window, processKeyboard);
+  glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+
+  // imgui init
+  IMGUI_CHECKVERSION();
+  ImGui::CreateContext();
+  ImGui::StyleColorsDark();
+  ImGuiIO& io = ImGui::GetIO();
+
+  io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
+  io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;
+
+  ImGui_ImplGlfw_InitForOpenGL(window, true);
+  ImGui_ImplOpenGL3_Init();
   
-  glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED); 
-  stbi_set_flip_vertically_on_load(true);
   glEnable(GL_DEPTH_TEST);
 
   unsigned int VAO[2];
   glGenVertexArrays(2, VAO);
-
   unsigned int VBO[1];
   glGenBuffers(1, VBO);
 
-  Mesh::Attributes objAttribute {
+  mesh::Handles cube = {
+    .vao = VAO[0],
+    .vbo = VBO[0],
+    .ebo = 0
+  };
+
+  mesh::Handles light_handle = {
+    .vao = VAO[1],
+    .vbo = VBO[0],
+    .ebo = 0
+  };
+
+  mesh::Attributes objAttribute {
     .strideLength = 8,
     .data = { 3, 3, 2 }
   };
 
-  Mesh::Attributes lightAttribute {
+  mesh::Attributes lightAttribute {
     .strideLength = 8,
     .data = { 3 }
   };
-  
-  Mesh::bindVAO(VAO[0]);
-  Mesh::bindVBO(VBO[0], vertices);
-  Mesh::setVertexAttributes(VBO[0], objAttribute);
-  Mesh::bindVAO(VAO[1]);
-  Mesh::bindVBO(VBO[0]);
-  Mesh::setVertexAttributes(VBO[1], lightAttribute);
 
+  mesh::bind_vao(cube);
+  mesh::generate_vbo(cube, vertices);
+  mesh::set_vertex_attributes(objAttribute);
+  mesh::bind_vao(light_handle);
+  mesh::bind_vbo(light_handle);
+  mesh::set_vertex_attributes(lightAttribute);
+
+  u32 circle_vao;
+  u32 circle_vbo;
+  u32 circle_ebo;
+  glGenVertexArrays(1, &circle_vao);
+  glGenBuffers(1, &circle_vbo);
+  glGenBuffers(1, &circle_ebo);
+  mesh::Handles circle = {
+    .vao = circle_vao,
+    .vbo = circle_vbo,
+    .ebo = circle_ebo,
+    .drawElementsCount = 0
+  };
+
+  u32 tube_vao;
+  u32 tube_vbo;
+  u32 tube_ebo;
+  glGenVertexArrays(1, &tube_vao);
+  glGenBuffers(1, &tube_vbo);
+  glGenBuffers(1, &tube_ebo);
+  mesh::Handles tube = {
+    .vao = tube_vao,
+    .vbo = tube_vbo,
+    .ebo = tube_ebo,
+    .drawElementsCount = 0
+  };
+
+  unsigned int vao, vbo, ebo;
+  glGenVertexArrays(1, &vao);
+  glGenBuffers(1, &vbo);
+  glGenBuffers(1, &ebo);
+  mesh::Handles square = {
+    .vao = vao,
+    .vbo = vbo,
+    .ebo = ebo,
+    .drawElementsCount = 0
+  };
+  
+  unsigned int vao1, vbo1, ebo1;
+  glGenVertexArrays(1, &vao1);
+  glGenBuffers(1, &vbo1);
+  glGenBuffers(1, &ebo1);
+  mesh::Handles outer = {
+    .vao = vao1,
+    .vbo = vbo1,
+    .ebo = ebo1,
+    .drawElementsCount = 0
+  };
+  
+  mesh::generate_square(square);
+  mesh::generate_outer(outer);
+  mesh::generate_circle(circle);
+  mesh::generate_tube(tube, gameState.player_);
+    
+  stbi_set_flip_vertically_on_load(true);
   Texture woodenBox = texture::load("resources/container2.png");
   Texture specularMap = texture::load("resources/container2_specular.png");
 
   Shader colour = shader::compile("shaders/lighting.vert", "shaders/lighting.frag");
-  Shader light    = shader::compile("shaders/light.vert", "shaders/light.frag");
-
+  Shader light  = shader::compile("shaders/light.vert", "shaders/light.frag");
+  Shader basic  = shader::compile("shaders/basic.vert", "shaders/basic.frag");
+				 
   colour.use();
   colour.setInt("material.diffuse", 0);
   colour.setInt("material.specular", 1);
@@ -176,8 +252,6 @@ int main() {
       ._quadratic = 0.032f
   };
 
-  
-  
   Material material = {
     ._shininess = { 32.0f },
     ._diffuse   = { 1.0f, 0.5f, 0.31f}
@@ -190,26 +264,27 @@ int main() {
     { 0.0f,  0.0f, -3.0f}
   };
 
-  array<vec3, 10> cubePositions = {
-    { 0.0f,  0.0f,  0.0f},
-    { 2.0f,  5.0f, -15.0f},
-    {-1.5f, -2.2f, -2.5f},
-    {-3.8f, -2.0f, -12.3f},
-    { 2.4f, -0.4f, -3.5f},
-    {-1.7f,  3.0f, -7.5f},
-    { 1.3f, -2.0f, -2.5f},
-    { 1.5f,  2.0f, -2.5f},
-    { 1.5f,  0.2f, -1.5f},
-    {-1.3f,  1.0f, -1.5f}
-  };
-  
+  float timer{0};
   while(!glfwWindowShouldClose(window)) {
 
       float currentFrame = glfwGetTime();
       deltaTime = currentFrame - lastFrame;
       lastFrame = currentFrame;
 
+      timer += deltaTime;
+
       processInput(window);
+
+      ImGui_ImplOpenGL3_NewFrame();
+      ImGui_ImplGlfw_NewFrame();
+      ImGui::NewFrame();
+      ImGui::Text("player position: %f %f %d", gameState.player_.head[0], gameState.player_.head[1], gameState.player_.body_length_);
+      ImGui::Text("food position: %f %f\n", gameState.food_[0], gameState.food_[1]);
+      
+      if (timer >= 0.5f) {
+	  bool growing = gameState.loop();
+	  timer -= 0.5f;
+      }
       
       glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
       glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -238,18 +313,29 @@ int main() {
       colour.setMat4("projection", projection);
 
       glBindVertexArray(VAO[0]);
-
-      for (u32 i{0}; i < 10; i++) {
+      glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+      // render body
+      for (u32 i{0}; i < gameState.player_.body_length_; i++) {
 	  mat4 model;
-	  model = translate(model, cubePositions[i]);
-	  float angle = 20.0f * i;
-	  model = rotate(model, maths::radians(angle), vec3{1.0f, 0.3f, 0.5});
+	  vec2 v = gameState.player_.body[i];
+	  model = translate(model, vec3{(float) v[0], 0, v[1]});
 	  colour.setMat4("model", model);
-
 	  glDrawArrays(GL_TRIANGLES, 0, 36);
       }
       
+
+      //render head
       mat4 model;
+      model = translate(model, vec3{(float) gameState.player_.head[0], 0, gameState.player_.head[1]});
+      colour.setMat4("model", model);
+      glDrawArrays(GL_TRIANGLES, 0, 36);
+
+      // render food
+      model = mat4{};
+      model = translate(model, vec3{(float) gameState.food_[0], 0, gameState.food_[1]});
+      colour.setMat4("model", model);
+      glDrawArrays(GL_TRIANGLES, 0, 36);
+
       light.use();
 
       model = mat4{};
@@ -261,11 +347,59 @@ int main() {
 
       glBindVertexArray(VAO[1]);
       glDrawArrays(GL_TRIANGLES, 0, 36);
+
+      basic.use();
+      model = mat4{};
+      basic.setMat4("view", view);
+      basic.setMat4("projection", projection);
+      /*
+      for (u32 x{0}; x < 8; x++) {
+	  for (u32 z{0}; z < 8; z++) {
+	      mat4 model;
+	      vec3 position = {(float)x, 0 , (float)z};
+	      model = translate(model, position);
+	      basic.setMat4("model", model);
+	      basic.setVec3("colour", vec3{0.3, 0.2, 0.8});
+	      mesh::draw_element_array(square);
+	      basic.setVec3("colour", vec3{0.8, 0.0, 0.1});
+	      mesh::draw_element_array(outer);
+	  }
+      }
+
+      mesh::bind_vao(circle);
+      for (u32 x{0}; x < 8; x++) {
+	  for (u32 z{0}; z < 8; z++) {
+	      mat4 model;
+	      vec3 position = {(float)x, 1.0 , (float)z};
+	      model = translate(model, position);
+	      basic.setMat4("model", model);
+	      basic.setVec3("colour", vec3{0.8, 0.6, 0.1});
+	      mesh::draw_element_array(circle);
+	  }
+      }
+      */
+      
+      
+      mesh::bind_vao(tube);
+      model = mat4{};
+      model = scale(model, {5, 5, 5});
+      //model = rotate(model, maths::radians(deltaTime), vec3(0.0, 0.0, 1.0));
+      basic.setMat4("model", model);
+      basic.setVec3("colour", vec3{0.2, 0.6, 0.1});
+      mesh::draw_element_array(tube);
+
+      glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+      
+      ImGui::Render();
+      ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
       
       glfwSwapBuffers(window);
       glfwPollEvents();
   }
 
+  ImGui_ImplOpenGL3_Shutdown();
+  ImGui_ImplGlfw_Shutdown();
+  ImGui::DestroyContext();
   glfwTerminate();
   return 0;
 }
@@ -276,14 +410,31 @@ void processInput(GLFWwindow* window)
       glfwSetWindowShouldClose(window, true);
   }
 
-  if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
-    camera.processKeyboard(Camera::movement::forward, deltaTime);
-  if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
-    camera.processKeyboard(Camera::movement::backwards, deltaTime);
-  if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
-    camera.processKeyboard(Camera::movement::left, deltaTime);
-  if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
-    camera.processKeyboard(Camera::movement::right, deltaTime);
+  static bool state = false;
+
+  if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS) {
+      state = true;
+  }
+    
+  if (state) {
+      if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
+        camera.processKeyboard(Camera::movement::forward, deltaTime);
+      if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
+        camera.processKeyboard(Camera::movement::backwards, deltaTime);
+      if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
+        camera.processKeyboard(Camera::movement::left, deltaTime);
+      if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
+        camera.processKeyboard(Camera::movement::right, deltaTime);
+  } else {
+      if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
+	gameState.player_.direction = snake::Direction::UP;
+      if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
+	gameState.player_.direction = snake::Direction::DOWN;
+      if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
+	gameState.player_.direction = snake::Direction::LEFT;
+      if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
+	gameState.player_.direction = snake::Direction::RIGHT;
+  }
 }
 
 void processKeyboard(GLFWwindow* window, double xpos, double ypos) {
