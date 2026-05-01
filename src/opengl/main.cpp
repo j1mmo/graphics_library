@@ -165,6 +165,19 @@ int main() {
   mesh::bind_vbo(light_handle);
   mesh::set_vertex_attributes(lightAttribute);
 
+  u32 turn_tube_vao;
+  u32 turn_tube_vbo;
+  u32 turn_tube_ebo;
+  glGenVertexArrays(1, &turn_tube_vao);
+  glGenBuffers(1, &turn_tube_vbo);
+  glGenBuffers(1, &turn_tube_ebo);
+  mesh::Handles turn_tube = {
+    .vao = turn_tube_vao,
+    .vbo = turn_tube_vbo,
+    .ebo = turn_tube_ebo,
+    .drawElementsCount = 0
+  };
+
   u32 circle_vao;
   u32 circle_vbo;
   u32 circle_ebo;
@@ -217,6 +230,7 @@ int main() {
   mesh::generate_outer(outer);
   mesh::generate_circle(circle);
   mesh::generate_tube(tube, gameState.player_);
+  mesh::generate_bending_tube(turn_tube);
     
   stbi_set_flip_vertically_on_load(true);
   Texture woodenBox = texture::load("resources/container2.png");
@@ -313,16 +327,6 @@ int main() {
       colour.setMat4("projection", projection);
 
       glBindVertexArray(VAO[0]);
-      glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-      // render body
-      for (u32 i{0}; i < gameState.player_.body_length_; i++) {
-	  mat4 model;
-	  vec2 v = gameState.player_.body[i];
-	  model = translate(model, vec3{(float) v[0], 0, v[1]});
-	  colour.setMat4("model", model);
-	  glDrawArrays(GL_TRIANGLES, 0, 36);
-      }
-      
 
       //render head
       mat4 model;
@@ -352,44 +356,48 @@ int main() {
       model = mat4{};
       basic.setMat4("view", view);
       basic.setMat4("projection", projection);
-      /*
+      
       for (u32 x{0}; x < 8; x++) {
 	  for (u32 z{0}; z < 8; z++) {
 	      mat4 model;
 	      vec3 position = {(float)x, 0 , (float)z};
 	      model = translate(model, position);
 	      basic.setMat4("model", model);
-	      basic.setVec3("colour", vec3{0.3, 0.2, 0.8});
+	      basic.setVec3("colour", vec3{0.1, 0.2, 0.6});
 	      mesh::draw_element_array(square);
-	      basic.setVec3("colour", vec3{0.8, 0.0, 0.1});
+	      basic.setVec3("colour", vec3{0.1, 0.6, 0.3});
 	      mesh::draw_element_array(outer);
 	  }
       }
 
-      mesh::bind_vao(circle);
-      for (u32 x{0}; x < 8; x++) {
-	  for (u32 z{0}; z < 8; z++) {
-	      mat4 model;
-	      vec3 position = {(float)x, 1.0 , (float)z};
-	      model = translate(model, position);
-	      basic.setMat4("model", model);
-	      basic.setVec3("colour", vec3{0.8, 0.6, 0.1});
-	      mesh::draw_element_array(circle);
-	  }
-      }
-      */
-      
-      
-      mesh::bind_vao(tube);
+      mesh::bind_vao(turn_tube);
       model = mat4{};
-      model = scale(model, {5, 5, 5});
-      //model = rotate(model, maths::radians(deltaTime), vec3(0.0, 0.0, 1.0));
       basic.setMat4("model", model);
-      basic.setVec3("colour", vec3{0.2, 0.6, 0.1});
-      mesh::draw_element_array(tube);
-
-      glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+      basic.setVec3("colour", vec3{0.7, 0.3, 0.1});
+      mesh::draw_element_array(turn_tube);
       
+      glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+      mesh::bind_vao(tube);
+      // render body
+      for (u32 i{0}; i < gameState.player_.body_length_; i++) {
+	  mat4 model =mat4{};
+	  vec2 current = gameState.player_.body[i];
+	  vec2 previous;
+	  if (0 == i) {
+	      previous = gameState.player_.head;
+	  } else {
+	      previous = gameState.player_.body[i - 1];
+	  }
+	  vec2 direction = current - previous;
+	  direction.Absolute();
+	  model = translate(model, vec3{(float) current[0], 0, current[1]});
+	  model = rotate(model, maths::radians(90.0f), vec3(0, direction[0], direction[1]));
+	  basic.setMat4("model", model);
+	  basic.setVec3("colour", vec3{0.7, 0.3, 0.1});
+	  mesh::draw_element_array(tube);
+      }
+      glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+
       ImGui::Render();
       ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
       
@@ -413,7 +421,7 @@ void processInput(GLFWwindow* window)
   static bool state = false;
 
   if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS) {
-      state = true;
+      state = !state;
   }
     
   if (state) {

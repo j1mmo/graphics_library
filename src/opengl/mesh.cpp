@@ -137,6 +137,66 @@ void mesh::generate_outer(mesh::Handles& mesh) {
   mesh.drawElementsCount = indicies.size();  
 }
 
+void mesh::generate_bending_tube(mesh::Handles& mesh)
+{
+  darray<float> vertices;
+  darray<u32> indices;
+
+  float R = 0.5f; // Bend radius
+  float r = 0.5f; // Pipe radius
+  int bendSegments = 32;
+  int tubeSegments = 24;
+
+  for (int i = 0; i <= bendSegments; ++i) {
+      // theta goes from 0 to 90 degrees (PI/2)
+      float theta = (float)i / bendSegments * (3.14159f / 2.0f);
+      float cosTheta = cos(theta);
+      float sinTheta = sin(theta);
+
+      for (int j = 0; j <= tubeSegments; ++j) {
+	  // phi goes from 0 to 360 degrees (2*PI)
+	  float phi = (float)j / tubeSegments * (2.0f * 3.14159f);
+	  float cosPhi = cos(phi);
+	  float sinPhi = sin(phi);
+
+	  vec3 v;
+	  // Position
+	  vertices.push((R + r * cosPhi) * cosTheta);
+	  vertices.push((R + r * cosPhi) * sinTheta);
+	  vertices.push(r * sinPhi);
+
+      }
+  }
+
+  for (int i = 0; i < bendSegments; ++i) {
+      for (int j = 0; j < tubeSegments; ++j) {
+	  int first = (i * (tubeSegments + 1)) + j;
+	  int second = first + tubeSegments + 1;
+
+	  // Triangle 1
+	  indices.push(first);
+	  indices.push(second);
+	  indices.push(first + 1);
+
+	  // Triangle 2
+	  indices.push(second);
+	  indices.push(second + 1);
+	  indices.push(first + 1);
+      }
+  }
+
+  bind_vao(mesh);
+  generate_vbo(mesh, vertices);
+  generate_ebo(mesh, indices);
+  set_vertex_attributes(mesh::Attributes{
+      .strideLength = 3,
+      .data = { 3 },
+    });
+  mesh.drawElementsCount = indices.size();
+  indices.clean();
+  vertices.clean();
+}
+
 void mesh::generate_tube(mesh::Handles& mesh, const snake::Player& player) {
   const u32 segments{8};
   const u32 no_of_verts{segments};
@@ -149,7 +209,6 @@ void mesh::generate_tube(mesh::Handles& mesh, const snake::Player& player) {
   vertices.reserve(vertices_length * 2);
 
   u32 i{0};
-  // create the points of the circle
   for (float point_coord{0.0f};
       i < no_of_verts && point_coord < 360.0f;
       i++, point_coord += theta) {
@@ -161,12 +220,6 @@ void mesh::generate_tube(mesh::Handles& mesh, const snake::Player& player) {
       vertices[i * 6 + 3] = (float)(radius * cos(radians));
       vertices[i * 6 + 4] = (float)(radius * sin(radians));
       vertices[i * 6 + 5] = -0.5;
-  }
-
-  printf("coords\n");
-  printf("vertices size: %d \n", vertices.size());
-  for(int i = 0; i < vertices.size(); i += 3) {
-      printf("%d: %f, %f, %f\n", i, vertices[i], vertices[i+1], vertices[i+2]);
   }
 
   darray<u32> polygons;
@@ -188,11 +241,6 @@ void mesh::generate_tube(mesh::Handles& mesh, const snake::Player& player) {
     polygons.push(currentFront);
     polygons.push(nextFront);
     polygons.push(nextBack);
-}
-
-  printf("indices\n");
-  for(int i = 0; i < polygons.size(); i += 3) {
-      printf("%d: %d, %d, %d\n", i / 3, polygons[i], polygons[i+1], polygons[i+2]);
   }
 
   bind_vao(mesh);

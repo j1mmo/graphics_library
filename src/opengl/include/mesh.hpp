@@ -39,6 +39,7 @@ namespace mesh {
  
   void generate_square(mesh::Handles& mesh);
   void generate_tube(mesh::Handles& mesh, const snake::Player& player);
+  void generate_bending_tube(mesh::Handles& mesh);
   void generate_outer(mesh::Handles& mesh);
   void generate_circle(mesh::Handles& mesh);
 };
