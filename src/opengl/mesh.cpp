@@ -142,36 +142,57 @@ void mesh::generate_bending_tube(mesh::Handles& mesh)
   darray<float> vertices;
   darray<u32> indices;
 
-  float R = 0.5f; // Bend radius
-  float r = 0.5f; // Pipe radius
-  int bendSegments = 32;
-  int tubeSegments = 24;
+  float bend_radius = 0.5f; // Bend radius
+  float pipe_radius = 0.5f; // Pipe radius
+  int bend_segments = 10;
+  int tube_segments = 6;
 
-  for (int i = 0; i <= bendSegments; ++i) {
-      // theta goes from 0 to 90 degrees (PI/2)
-      float theta = (float)i / bendSegments * (3.14159f / 2.0f);
-      float cosTheta = cos(theta);
-      float sinTheta = sin(theta);
+  // pivot points
+  const float pivotX = -0.5f;
+  const float pivotY =  0.0f;
+  const float pivotZ = -0.5f;
+  // Direction multiplier: 1.0f for Right, -1.0f for Left
+  float direction = 1.0f; 
 
-      for (int j = 0; j <= tubeSegments; ++j) {
-	  // phi goes from 0 to 360 degrees (2*PI)
-	  float phi = (float)j / tubeSegments * (2.0f * 3.14159f);
-	  float cosPhi = cos(phi);
-	  float sinPhi = sin(phi);
+  for (int i = 0; i <= bend_segments; ++i) {
+      float bendProgress = (float)i / bend_segments;
+    
+      // The angle of the turn (multiplied by direction)
+      float bendAngle = bendProgress * (3.14159f / 2.0f) * direction;
+      float bendCos = cos(bendAngle);
+      float bendSin = sin(bendAngle);
 
-	  vec3 v;
-	  // Position
-	  vertices.push((R + r * cosPhi) * cosTheta);
-	  vertices.push((R + r * cosPhi) * sinTheta);
-	  vertices.push(r * sinPhi);
+      for (int j = 0; j <= tube_segments; ++j) {
+	  float tubeProgress = (float)j / tube_segments;
+	  float ringAngle = tubeProgress * (2.0f * 3.14159f);
+        
+	  float ringCos = cos(ringAngle);
+	  float ringSin = sin(ringAngle);
 
+	  // 1. Define the point relative to the pivot
+	  // We assume the pipe starts at the pivot + bendRadius
+	  float localX = (bend_radius + pipe_radius * ringCos);
+	  float localY = (pipe_radius * ringSin); 
+	  float localZ = 0.0f; 
+
+	  // 2. Rotate the point around the Pivot's Y-axis
+	  // Standard 2D rotation:
+	  // x' = x*cos - z*sin
+	  // z' = x*sin + z*cos
+	  float rotatedX = localX * bendCos - localZ * bendSin;
+	  float rotatedZ = localX * bendSin + localZ * bendCos;
+
+	  // 3. Translate the rotated point to the Pivot's world position
+	  vertices.push(rotatedX + pivotX);
+	  vertices.push(localY + pivotY);
+	  vertices.push(rotatedZ + pivotZ);
       }
   }
 
-  for (int i = 0; i < bendSegments; ++i) {
-      for (int j = 0; j < tubeSegments; ++j) {
-	  int first = (i * (tubeSegments + 1)) + j;
-	  int second = first + tubeSegments + 1;
+  for (int i = 0; i < bend_segments; ++i) {
+      for (int j = 0; j < tube_segments; ++j) {
+	  int first = (i * (tube_segments + 1)) + j;
+	  int second = first + tube_segments + 1;
 
 	  // Triangle 1
 	  indices.push(first);

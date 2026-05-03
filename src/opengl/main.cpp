@@ -360,7 +360,7 @@ int main() {
       for (u32 x{0}; x < 8; x++) {
 	  for (u32 z{0}; z < 8; z++) {
 	      mat4 model;
-	      vec3 position = {(float)x, 0 , (float)z};
+	      vec3 position = {(float)x, 0, (float)z};
 	      model = translate(model, position);
 	      basic.setMat4("model", model);
 	      basic.setVec3("colour", vec3{0.1, 0.2, 0.6});
@@ -370,33 +370,65 @@ int main() {
 	  }
       }
 
-      mesh::bind_vao(turn_tube);
-      model = mat4{};
-      basic.setMat4("model", model);
-      basic.setVec3("colour", vec3{0.7, 0.3, 0.1});
-      mesh::draw_element_array(turn_tube);
-      
-      glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-      mesh::bind_vao(tube);
+         
       // render body
       for (u32 i{0}; i < gameState.player_.body_length_; i++) {
-	  mat4 model =mat4{};
+	  mat4 model = mat4{};
 	  vec2 current = gameState.player_.body[i];
-	  vec2 previous;
-	  if (0 == i) {
-	      previous = gameState.player_.head;
+	  vec2 previous = (i == 0) ? gameState.player_.head : gameState.player_.body[i - 1];
+	  vec2 next {-1.0f, -1.0f};
+	  if (i == gameState.player_.body_length_ - 1) {
+	      continue;
 	  } else {
-	      previous = gameState.player_.body[i - 1];
+	      next = gameState.player_.body[i + 1];
 	  }
-	  vec2 direction = current - previous;
-	  direction.Absolute();
+	  vec2 direction_in = current - previous;
+	  vec2 direction_out = next - current;
+
+	  bool is_bend = false;
+	  if (next[0] != -1.0f && next[1] != -1.0f) {
+	      is_bend = !(direction_in[0] != direction_out[0] || direction_in[1] != direction_out[1]);
+	  }
+
+	  direction_in.Absolute();
 	  model = translate(model, vec3{(float) current[0], 0, current[1]});
-	  model = rotate(model, maths::radians(90.0f), vec3(0, direction[0], direction[1]));
-	  basic.setMat4("model", model);
+	  
+	  
 	  basic.setVec3("colour", vec3{0.7, 0.3, 0.1});
-	  mesh::draw_element_array(tube);
+	  if (true == is_bend) {
+	      mesh::bind_vao(tube);
+	      model = rotate(model, maths::radians(90.0f), vec3(0, direction_in[0], direction_in[1]));
+	      basic.setMat4("model", model);
+	      mesh::draw_element_array(tube);
+	  } else {
+	      vec2 direction =  previous - current;
+	      float dot = vec2::dot_product(direction, direction_out);
+	      float rotation{0.0f};
+	      if (dot == 0.0f) {
+		  float turn_direction = (direction_in[0] * direction_out[1]) - (direction_in[1] * direction_out[0]);
+		  vec2 sum = direction + direction_out;
+		  i32 x = static_cast<i32>(sum[0]);
+		  i32 y = static_cast<i32>(sum[1]);
+		  if (turn_direction > 0.0f) {
+		      if (x ==  1 && y ==  1) rotation = 180.0f;
+		      if (x == -1 && y ==  1) rotation = 270.0f;
+		      if (x == -1 && y == -1) rotation = 0.0f;
+		      if (x ==  1 && y == -1) rotation = 90.0f;
+		  } else {
+		      if (x ==  1 && y ==  1) rotation = 180.0f;
+		      if (x == -1 && y ==  1) rotation = 90.0f;
+		      if (x == -1 && y == -1) rotation = 0.0f;
+		      if (x ==  1 && y == -1) rotation = 90.0f;
+		  }
+		  
+		  ImGui::Text("bend position: %d %d %f\n", x, y, turn_direction);
+	      }
+	      mesh::bind_vao(turn_tube);
+	      model = rotate(model, maths::radians(rotation), vec3(0, 1, 0));
+	      basic.setMat4("model", model);
+	      mesh::draw_element_array(turn_tube);
+	  }
       }
-      glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
       ImGui::Render();
       ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
