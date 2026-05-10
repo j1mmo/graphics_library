@@ -377,7 +377,7 @@ int main() {
 	  vec2 current = gameState.player_.body[i];
 	  vec2 previous = (i == 0) ? gameState.player_.head : gameState.player_.body[i - 1];
 	  vec2 next {-1.0f, -1.0f};
-	  if (i == gameState.player_.body_length_ - 1) {
+	  if (i == gameState.player_.body_length_) {
 	      continue;
 	  } else {
 	      next = gameState.player_.body[i + 1];
@@ -392,7 +392,6 @@ int main() {
 
 	  direction_in.Absolute();
 	  model = translate(model, vec3{(float) current[0], 0, current[1]});
-	  
 	  
 	  basic.setVec3("colour", vec3{0.7, 0.3, 0.1});
 	  if (true == is_bend) {
@@ -410,18 +409,32 @@ int main() {
 		  i32 x = static_cast<i32>(sum[0]);
 		  i32 y = static_cast<i32>(sum[1]);
 		  if (turn_direction > 0.0f) {
-		      if (x ==  1 && y ==  1) rotation = 180.0f;
-		      if (x == -1 && y ==  1) rotation = 270.0f;
-		      if (x == -1 && y == -1) rotation = 0.0f;
-		      if (x ==  1 && y == -1) rotation = 90.0f;
+		      if (x ==  1 && y ==  1) {
+			  rotation = 180.0f;
+		      }
+		      if (x == -1 && y ==  1) {
+			  rotation = 270.0f;
+		      }
+		      if (x == -1 && y == -1) {
+			  rotation = 0.0f;
+		      }
+		      if (x ==  1 && y == -1) {
+			  rotation = 90.0f;
+		      }
 		  } else {
-		      if (x ==  1 && y ==  1) rotation = 180.0f;
-		      if (x == -1 && y ==  1) rotation = 90.0f;
-		      if (x == -1 && y == -1) rotation = 0.0f;
-		      if (x ==  1 && y == -1) rotation = 90.0f;
+		      if (x ==  1 && y ==  1) {
+			  rotation = 180.0f;
+		      }
+		      if (x == -1 && y ==  1) {
+			  rotation = 90.0f;
+		      }
+		      if (x == -1 && y == -1) {
+			  rotation = 0.0f;
+		      }
+		      if (x ==  1 && y == -1) {
+			  rotation = 90.0f;
+		      }
 		  }
-		  
-		  ImGui::Text("bend position: %d %d %f\n", x, y, turn_direction);
 	      }
 	      mesh::bind_vao(turn_tube);
 	      model = rotate(model, maths::radians(rotation), vec3(0, 1, 0));

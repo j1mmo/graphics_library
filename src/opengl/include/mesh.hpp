@@ -36,7 +36,8 @@ namespace mesh {
   
   void draw_element_array(const mesh::Handles& mesh);
   void draw_vertex_arrays(const mesh::Handles& mesh);
- 
+
+  void Generate_Cone(mesh::Handles& mesh);
   void generate_square(mesh::Handles& mesh);
   void generate_tube(mesh::Handles& mesh, const snake::Player& player);
   void generate_bending_tube(mesh::Handles& mesh);
