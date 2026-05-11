@@ -46,7 +46,6 @@ in vec2 TexCoords;
 uniform Material material;
 uniform DirectionalLight directionalLight;
 uniform SpotLight spotLight;
-
 uniform vec3 viewPos;
 
 /**

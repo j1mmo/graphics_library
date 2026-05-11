@@ -105,63 +105,81 @@ void mesh::generate_square(mesh::Handles& mesh) {
 }
 
 void mesh::Generate_Cone(mesh::Handles& mesh) {
-  constexpr i32 slices{32};
-  constexpr f32 radius{1.0f};
-  constexpr f32 height{1.0f};
-
-  darray<f32> vertices;
-  // tip first
-  vertices.push(0.0f);
-  vertices.push(height);
-  vertices.push(0.0f);
-
-  for (i32 i{0}; i <= slices; i++) {
-      const f32 angle = (i * 2.0f * maths::pi) / static_cast<f32>(slices);
-      const f32 x = radius * cos(angle);
-      const f32 z = radius * sin(angle);
-
-      vertices.push(x);
-      vertices.push(0.0f);
-      vertices.push(z);
-  }
-
-  darray<u32> indices;
-
-  for (i32 i{0}; i < slices; i++) {
-      i32 current_rim_index{i + 2};
-      i32 next_rim_index{i + 3};
-
-      if (i == slices - 1) {
-	  next_rim_index = 2;
-      }
-      
-      indices.push(0);
-      indices.push(current_rim_index);
-      indices.push(next_rim_index);
-  }
-
-  for (i32 i{0}; i < slices; i++) {
-      int current_rim_index{i + 2};
-      int next_rim_index{i + 3};
-
-      if (i == slices - 1) {
-	  next_rim_index = 2;
-      }
-
-      indices.push(1);
-      indices.push(next_rim_index);
-      indices.push(current_rim_index);
-  }
+  constexpr u32 segments{16};
+  constexpr u32 no_of_verts{segments};
+  constexpr f32 theta{(360.0f / static_cast<f32>(segments))};
+  constexpr f32 radius{0.5};
+  constexpr u32 vertices_length{no_of_verts * 3};
+  constexpr u32 polygon_vertices_length{segments * 3};
   
+  darray<f32> vertices;
+  
+  for (u32 i{0}; i < no_of_verts; i++) {
+      const f32 point_coord = static_cast<f32>(i) * theta;
+      const f32 radians = maths::radians(point_coord);
+      const f32 cos_theta = (cos(radians));
+      const f32 sin_theta = (sin(radians));
+      const f32 u_value = static_cast<f32>(i) / static_cast<f32>(segments);
+      
+      //vertices x, y, z
+      vertices.push(radius * cos(radians));
+      vertices.push(radius * sin(radians));
+      vertices.push(0.5f);
+      
+      //normals
+      vertices.push(cos_theta);
+      vertices.push(sin_theta);
+      vertices.push(0.0f);
+
+      //uv
+      vertices.push(u_value);
+      vertices.push(0.0f);
+      
+      //vertices x, y, z
+      vertices.push(0.2 * cos(radians));
+      vertices.push(0.2 * sin(radians));
+      vertices.push(-0.5);
+
+      //normals
+      vertices.push(cos_theta);
+      vertices.push(sin_theta);
+      vertices.push(0.0f);
+
+      //uv
+      vertices.push(u_value);
+      vertices.push(0.0f);
+  }
+
+  darray<u32> polygons;
+  for (i32 i = 0; i < segments; i++) {
+    
+    const i32 currentFront = i * 2;
+    const i32 currentBack  = i * 2 + 1;
+    
+    // mod to wrap from the last vertex back to the first
+    const i32 nextFront = ((i + 1) % segments) * 2;
+    const i32 nextBack  = ((i + 1) % segments) * 2 + 1;
+
+    // triangle 1
+    polygons.push(currentFront);
+    polygons.push(nextBack);
+    polygons.push(currentBack);
+
+    // triangle 2
+    polygons.push(currentFront);
+    polygons.push(nextFront);
+    polygons.push(nextBack);
+  }
+
   bind_vao(mesh);
   generate_vbo(mesh, vertices);
-  generate_ebo(mesh, indices);
+  generate_ebo(mesh, polygons);
   set_vertex_attributes(mesh::Attributes{
-      .strideLength = 3,
-      .data = { 3 },
-  });
-  mesh.drawElementsCount = indices.size();
-  indices.clean();
+      .strideLength = 8,
+      .data = { 3, 3, 2 },
+    });
+  mesh.drawElementsCount = polygons.size();
+  polygons.clean();
   vertices.clean();
 }
 
@@ -200,36 +218,39 @@ void mesh::generate_outer(mesh::Handles& mesh) {
 
 void mesh::generate_bending_tube(mesh::Handles& mesh)
 {
-  darray<f32> vertices;
-  darray<u32> indices;
-
   constexpr f32 bend_radius = 0.5f; 
   constexpr f32 pipe_radius = 0.5f;
-  constexpr i32 bend_segments = 20;
-  constexpr i32 tube_segments = 20;
-
+  constexpr i32 bend_segments = 6;
+  constexpr i32 tube_segments = 6;
   constexpr f32 pivot_x = -0.5f;
   constexpr f32 pivot_y =  0.0f;
   constexpr f32 pivot_z = -0.5f;
-  
   // Direction multiplier: 1.0f for Right, -1.0f for Left
   constexpr f32 direction = 1.0f; 
 
+  darray<f32> vertices;
   // generate vertices
   for (i32 i = 0; i <= bend_segments; ++i) {
       const f32 bend_progress = static_cast<f32>(i) / bend_segments;
-    
       // The angle of the turn (multiplied by direction)
-      const f32 bend_angle = bend_progress * (3.14159f / 2.0f) * direction;
+      const f32 bend_angle = bend_progress * (maths::pi / 2.0f) * direction;
       const f32 bend_cos = cos(bend_angle);
       const f32 bend_sin = sin(bend_angle);
 
-      for (i32 j = 0; j <= tube_segments; ++j) {
+      for (i32 j = 0; j <= tube_segments; j++) {
 	  const f32 tube_progress = static_cast<f32>(j) / tube_segments;
-	  const f32 ring_angle = tube_progress * (2.0f * 3.14159f);
-        
+	  const f32 ring_angle = tube_progress * (2.0f * maths::pi);
+	  
 	  const f32 ring_cos = cos(ring_angle);
 	  const f32 ring_sin = sin(ring_angle);
+
+	  const f32 local_nx = ring_cos;
+	  const f32 local_ny = ring_sin;
+	  const f32 local_nz = 0.0f;
+
+	  const f32 rotated_nx = local_nx * bend_cos - local_nz * bend_sin;
+          const f32 rotated_ny = local_ny; // Y doesn't change in this rotation
+          const f32 rotated_nz = local_nx * bend_sin + local_nz * bend_cos;
 
 	  const f32 local_x = (bend_radius + pipe_radius * ring_cos);
 	  const f32 local_y = (pipe_radius * ring_sin); 
@@ -237,13 +258,21 @@ void mesh::generate_bending_tube(mesh::Handles& mesh)
 
 	  const f32 rotated_x = local_x * bend_cos - local_z * bend_sin;
 	  const f32 rotated_z = local_x * bend_sin + local_z * bend_cos;
-
+	  //verts x, y, z
 	  vertices.push(rotated_x + pivot_x);
 	  vertices.push(local_y + pivot_y);
 	  vertices.push(rotated_z + pivot_z);
+	  //normals x, y, z
+	  vertices.push(rotated_nx);
+          vertices.push(rotated_ny);
+          vertices.push(rotated_nz);
+          // UVs
+          vertices.push(tube_progress); // U
+          vertices.push(bend_progress); // V
       }
   }
-  
+
+  darray<u32> indices;
   // generate indices
   for (i32 i = 0; i < bend_segments; ++i) {
       for (i32 j = 0; j < tube_segments; ++j) {
@@ -266,8 +295,8 @@ void mesh::generate_bending_tube(mesh::Handles& mesh)
   generate_vbo(mesh, vertices);
   generate_ebo(mesh, indices);
   set_vertex_attributes(mesh::Attributes{
-      .strideLength = 3,
-      .data = { 3 },
+      .strideLength = 8,
+      .data = { 3, 3, 2 },
     });
   mesh.drawElementsCount = indices.size();
   indices.clean();
@@ -277,27 +306,44 @@ void mesh::generate_bending_tube(mesh::Handles& mesh)
 void mesh::generate_tube(mesh::Handles& mesh, const snake::Player& player) {
   constexpr u32 segments{16};
   constexpr u32 no_of_verts{segments};
-  constexpr f32 theta{360.0f / (f32)segments};
+  constexpr f32 theta{360.0f / static_cast<f32>(segments)};
   constexpr f32 radius{0.5};
   constexpr u32 vertices_length{no_of_verts * 3};
   constexpr u32 polygon_vertices_length{segments * 3};
   
   darray<f32> vertices;
-  vertices.reserve(vertices_length * 2);
-
-  u32 i{0};
-  for (f32 point_coord{0.0f};
-      i < no_of_verts && point_coord < 360.0f;
-      i++, point_coord += theta) {
+  for (u32 i{0}; i < no_of_verts; i++) {
+      const f32 point_coord = static_cast<f32>(i) * theta;
       const f32 radians = maths::radians(point_coord);
+      const f32 cos_theta = (cos(radians));
+      const f32 sin_theta = (sin(radians));
+      const f32 u_value = static_cast<f32>(i) / static_cast<f32>(segments);
       
-      vertices[i * 6]     = (f32)(radius * cos(radians));
-      vertices[i * 6 + 1] = (f32)(radius * sin(radians));
-      vertices[i * 6 + 2] = 0.5;
+      vertices.push(radius * cos_theta);
+      vertices.push(radius * sin_theta);
+      vertices.push(0.5);
 
-      vertices[i * 6 + 3] = (f32)(radius * cos(radians));
-      vertices[i * 6 + 4] = (f32)(radius * sin(radians));
-      vertices[i * 6 + 5] = -0.5;
+      //normals
+      vertices.push(cos_theta);
+      vertices.push(sin_theta);
+      vertices.push(0.0f);
+
+      //uv
+      vertices.push(u_value);
+      vertices.push(0.0f);
+
+      vertices.push(radius * cos(radians));
+      vertices.push(radius * sin(radians));
+      vertices.push(-0.5);
+
+      //normals
+      vertices.push(cos_theta);
+      vertices.push(sin_theta);
+      vertices.push(0.0f);
+
+      //uv
+      vertices.push(u_value);
+      vertices.push(0.0f);
   }
 
   darray<u32> polygons;
@@ -325,9 +371,9 @@ void mesh::generate_tube(mesh::Handles& mesh, const snake::Player& player) {
   generate_vbo(mesh, vertices);
   generate_ebo(mesh, polygons);
   set_vertex_attributes(mesh::Attributes{
-      .strideLength = 3,
-      .data = { 3 },
-    });
+      .strideLength = 8,
+      .data = { 3, 3, 2 },
+  });
   mesh.drawElementsCount = polygons.size();
   polygons.clean();
   vertices.clean();

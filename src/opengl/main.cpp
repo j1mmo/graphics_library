@@ -225,7 +225,21 @@ int main() {
     .ebo = ebo1,
     .drawElementsCount = 0
   };
+
+  u32 tail_vao;
+  u32 tail_vbo;
+  u32 tail_ebo;
+  glGenVertexArrays(1, &tail_vao);
+  glGenBuffers(1, &tail_vbo);
+  glGenBuffers(1, &tail_ebo);
+  mesh::Handles cone = {
+    .vao = tail_vao,
+    .vbo = tail_vbo,
+    .ebo = tail_ebo,
+    .drawElementsCount = 0
+  };
   
+  mesh::Generate_Cone(cone);
   mesh::generate_square(square);
   mesh::generate_outer(outer);
   mesh::generate_circle(circle);
@@ -239,6 +253,7 @@ int main() {
   Shader colour = shader::compile("shaders/lighting.vert", "shaders/lighting.frag");
   Shader light  = shader::compile("shaders/light.vert", "shaders/light.frag");
   Shader basic  = shader::compile("shaders/basic.vert", "shaders/basic.frag");
+  Shader snake  = shader::compile("shaders/snake.vert", "shaders/snake.frag");
 				 
   colour.use();
   colour.setInt("material.diffuse", 0);
@@ -250,6 +265,13 @@ int main() {
 
   DirectionalLight lightData = {
     ._direction = { 1.2f, 1.0f, 2.0f },
+    ._ambient  = { 0.2f, 0.2f, 0.2f },
+    ._diffuse  = { 0.5f, 0.5f, 0.5f },
+    ._specular = { 1.0f, 1.0f, 1.0f }
+  };
+
+  Light snake_light = {
+    ._position = { 1.2f, 1.0f, 2.0f },
     ._ambient  = { 0.2f, 0.2f, 0.2f },
     ._diffuse  = { 0.5f, 0.5f, 0.5f },
     ._specular = { 1.0f, 1.0f, 1.0f }
@@ -292,8 +314,7 @@ int main() {
       ImGui_ImplOpenGL3_NewFrame();
       ImGui_ImplGlfw_NewFrame();
       ImGui::NewFrame();
-      ImGui::Text("player position: %f %f %d", gameState.player_.head[0], gameState.player_.head[1], gameState.player_.body_length_);
-      ImGui::Text("food position: %f %f\n", gameState.food_[0], gameState.food_[1]);
+      
       
       if (timer >= 0.5f) {
 	  bool growing = gameState.loop();
@@ -369,38 +390,62 @@ int main() {
 	      mesh::draw_element_array(outer);
 	  }
       }
-
-         
-      // render body
+      snake.use();
+      model = mat4{};
+      snake.setLight(snake_light);
+      snake.setFloat("material.diffuse", 0.2);
+      snake.setFloat("material.specular", 0.6);
+      snake.setFloat("material.shininess", 0.8);
+      snake.setMat4("view", view);
+      snake.setMat4("projection", projection);
+      // render snake body - messy? clean up?
+      // Switch to wireframe mode
+      glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
       for (u32 i{0}; i < gameState.player_.body_length_; i++) {
 	  mat4 model = mat4{};
 	  vec2 current = gameState.player_.body[i];
 	  vec2 previous = (i == 0) ? gameState.player_.head : gameState.player_.body[i - 1];
 	  vec2 next {-1.0f, -1.0f};
-	  if (i == gameState.player_.body_length_) {
-	      continue;
+	  bool tail{false};
+	  if (i == gameState.player_.body_length_ - 1) {
+	      tail = true;
 	  } else {
 	      next = gameState.player_.body[i + 1];
 	  }
 	  vec2 direction_in = current - previous;
 	  vec2 direction_out = next - current;
 
-	  bool is_bend = false;
+	  bool is_bend{true};
 	  if (next[0] != -1.0f && next[1] != -1.0f) {
-	      is_bend = !(direction_in[0] != direction_out[0] || direction_in[1] != direction_out[1]);
+	      is_bend = (direction_in[0] != direction_out[0] || direction_in[1] != direction_out[1]);
 	  }
 
 	  direction_in.Absolute();
-	  model = translate(model, vec3{(float) current[0], 0, current[1]});
-	  
-	  basic.setVec3("colour", vec3{0.7, 0.3, 0.1});
-	  if (true == is_bend) {
-	      mesh::bind_vao(tube);
-	      model = rotate(model, maths::radians(90.0f), vec3(0, direction_in[0], direction_in[1]));
-	      basic.setMat4("model", model);
-	      mesh::draw_element_array(tube);
-	  } else {
-	      vec2 direction =  previous - current;
+	  model = translate(model, vec3{(float) current[0], 0, current[1]}); 
+	  snake.setVec3("colour", vec3{0.7, 0.3, 0.1});
+	  if (tail == true) {
+	      mesh::bind_vao(cone);
+	      vec2 direction = previous - current;
+	      float turn_direction = vec2::dot_product(direction_in, current);
+	      f32 rotation_angle{0.0f};
+	      i32 x = static_cast<i32>(direction[0]);
+	      i32 y = static_cast<i32>(direction[1]);
+	      if (x == 1) {
+		  rotation_angle = 270.0f;
+	      } else if (x == -1) {
+		  rotation_angle = 90.0f;
+	      } else if (y == -1) {
+		  rotation_angle = 180.0f;
+	      } else if (y == 1) {
+		  rotation_angle = 0.0f;
+	      }
+	      ImGui::Text("direction: %f rotation: %f\n %d %d", turn_direction, rotation_angle, x, y);
+	      model = rotate(model, maths::radians(rotation_angle), vec3(0, 1, 0));
+	      snake.setMat4("model", model);
+	      mesh::draw_element_array(cone);
+	  }
+	  else if (true == is_bend) {
+	      vec2 direction = previous - current;
 	      float dot = vec2::dot_product(direction, direction_out);
 	      float rotation{0.0f};
 	      if (dot == 0.0f) {
@@ -409,39 +454,41 @@ int main() {
 		  i32 x = static_cast<i32>(sum[0]);
 		  i32 y = static_cast<i32>(sum[1]);
 		  if (turn_direction > 0.0f) {
-		      if (x ==  1 && y ==  1) {
+		      if (x == 1 && y == 1) {
 			  rotation = 180.0f;
-		      }
-		      if (x == -1 && y ==  1) {
+		      } else if (x == -1 && y ==  1) {
 			  rotation = 270.0f;
-		      }
-		      if (x == -1 && y == -1) {
+		      } else if (x == -1 && y == -1) {
 			  rotation = 0.0f;
-		      }
-		      if (x ==  1 && y == -1) {
+		      } else if (x ==  1 && y == -1) {
 			  rotation = 90.0f;
 		      }
 		  } else {
 		      if (x ==  1 && y ==  1) {
 			  rotation = 180.0f;
-		      }
-		      if (x == -1 && y ==  1) {
+		      } else if (x == -1 && y ==  1) {
 			  rotation = 90.0f;
-		      }
-		      if (x == -1 && y == -1) {
+		      } else if (x == -1 && y == -1) {
 			  rotation = 0.0f;
-		      }
-		      if (x ==  1 && y == -1) {
+		      } else if (x ==  1 && y == -1) {
 			  rotation = 90.0f;
 		      }
 		  }
 	      }
 	      mesh::bind_vao(turn_tube);
 	      model = rotate(model, maths::radians(rotation), vec3(0, 1, 0));
-	      basic.setMat4("model", model);
+	      snake.setMat4("model", model);
 	      mesh::draw_element_array(turn_tube);
 	  }
+	  else {    
+	      mesh::bind_vao(tube);
+	      // this might be wrong
+	      model = rotate(model, maths::radians(90.0f), vec3(0, direction_in[0], direction_in[1]));
+	      snake.setMat4("model", model);
+	      mesh::draw_element_array(tube);
+	  }
       }
+      glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
       ImGui::Render();
       ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
