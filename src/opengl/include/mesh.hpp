@@ -7,7 +7,7 @@
 #include "types.hpp"
 #include "snake.hpp"
 
-namespace mesh {
+namespace Mesh {
 
   struct Attributes {
     u32 strideLength;
@@ -21,28 +21,28 @@ namespace mesh {
     u32 drawElementsCount{0};
   };
   
-  void generate_vao(const mesh::Handles& handle);
-  void generate_ebo_stream(const mesh::Handles& handle, const darray<u32>& indicies);
-  void generate_vbo_stream(const mesh::Handles& handle, const darray<float>& data);
-  void generate_ebo(const mesh::Handles& handle, const darray<u32>& indicies);
-  void generate_vbo(const mesh::Handles& handle, const darray<float>& data);
+  void generate_vao(const Mesh::Handles& handle);
+  void generate_ebo_stream(const Mesh::Handles& handle, const darray<u32>& indicies);
+  void generate_vbo_stream(const Mesh::Handles& handle, const darray<float>& data);
+  void generate_ebo(const Mesh::Handles& handle, const darray<u32>& indicies);
+  void generate_vbo(const Mesh::Handles& handle, const darray<float>& data);
 
-  void generate_vertex_array_attributes(const mesh::Handles& mesh, const darray<float> data, const Attributes& attributes);
+  void generate_vertex_array_attributes(const Mesh::Handles& Mesh, const darray<float> data, const Attributes& attributes);
   void set_vertex_attributes(const Attributes& attributes);
   
-  void bind_vao(const mesh::Handles& handle);
-  void bind_vbo(const mesh::Handles& handle);
-  void bind_ebo(const mesh::Handles& handle);
+  void bind_vao(const Mesh::Handles& handle);
+  void bind_vbo(const Mesh::Handles& handle);
+  void bind_ebo(const Mesh::Handles& handle);
   
-  void draw_element_array(const mesh::Handles& mesh);
-  void draw_vertex_arrays(const mesh::Handles& mesh);
+  void draw_element_array(const Mesh::Handles& Mesh);
+  void draw_vertex_arrays(const Mesh::Handles& Mesh);
 
-  void Generate_Cone(mesh::Handles& mesh);
-  void generate_square(mesh::Handles& mesh);
-  void generate_tube(mesh::Handles& mesh, const snake::Player& player);
-  void generate_bending_tube(mesh::Handles& mesh);
-  void generate_outer(mesh::Handles& mesh);
-  void generate_circle(mesh::Handles& mesh);
+  void Generate_Cone(Mesh::Handles& Mesh);
+  void generate_square(Mesh::Handles& Mesh);
+  void generate_tube(Mesh::Handles& Mesh, const snake::Player& player);
+  void generate_bending_tube(Mesh::Handles& Mesh);
+  void generate_outer(Mesh::Handles& Mesh);
+  void generate_circle(Mesh::Handles& Mesh);
 };
 
 #endif // MASH_HPP

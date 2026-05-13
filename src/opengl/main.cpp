@@ -1,10 +1,4 @@
-#include <glad/glad.h>
-#include <GLFW/glfw3.h>
 #include <spdlog/spdlog.h>
-
-#include <imgui.h>
-#include <backends/imgui_impl_glfw.h>
-#include <backends/imgui_impl_opengl3.h>
 
 #include <shader.hpp>
 #include <texture.hpp>
@@ -18,6 +12,10 @@
 #include <camera.hpp>
 #include <snake.hpp>
 #include <mesh.hpp>
+
+#include <obj_loader.hpp>
+#include <init.hpp>
+#include <mesh_manager.hpp>
 
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
@@ -86,182 +84,89 @@ i32 getMaximumVertexAttributes() {
 }
 
 int main() {
-  glfwInit();
-  glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-  glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
-  glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
   
-  glfwSetErrorCallback([](int error, const char* description) {
-    spdlog::error("GLFW Error ({}): {}", error, description);
-  });
+  init::glfw();
+  GLFWwindow * window = init::create_window();
+  init::Glad();
+  init::Set_Callback_Functions(window);
   
-  u32 width = 1920, height = 1080;
-  GLFWwindow * window = glfwCreateWindow(width, height, "Window", NULL, NULL);
-  if (window == nullptr) {
-      spdlog::critical("Failed to create GLFW Window.");
-      glfwTerminate();
-      return -1;
-  }
-
-  glfwMakeContextCurrent(window);
-
-  if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
-      spdlog::critical("Failed to initialise GLAD.");
-      return -1;
-  }
-
-  glfwSetFramebufferSizeCallback(window, [](GLFWwindow* window, int width, int height) {
-    glViewport(0, 0, width, height);
-  });
-
   glfwSetCursorPosCallback(window, processKeyboard);
   glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
-  // imgui init
-  IMGUI_CHECKVERSION();
-  ImGui::CreateContext();
-  ImGui::StyleColorsDark();
-  ImGuiIO& io = ImGui::GetIO();
-
-  io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
-  io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;
-
-  ImGui_ImplGlfw_InitForOpenGL(window, true);
-  ImGui_ImplOpenGL3_Init();
+  ImGuiIO& io = init::Imgui(window);
   
   glEnable(GL_DEPTH_TEST);
+  glDepthFunc(GL_LESS);
 
+  Mesh::Mesh_Manager mesh_manager;
+  mesh_manager.Init();
+   
   unsigned int VAO[2];
   glGenVertexArrays(2, VAO);
   unsigned int VBO[1];
   glGenBuffers(1, VBO);
 
-  mesh::Handles cube = {
+  Mesh::Handles cube = {
     .vao = VAO[0],
     .vbo = VBO[0],
     .ebo = 0
   };
 
-  mesh::Handles light_handle = {
+  Mesh::Handles light_handle = {
     .vao = VAO[1],
     .vbo = VBO[0],
     .ebo = 0
   };
 
-  mesh::Attributes objAttribute {
+  Mesh::Attributes objAttribute {
     .strideLength = 8,
     .data = { 3, 3, 2 }
   };
 
-  mesh::Attributes lightAttribute {
+  Mesh::Attributes lightAttribute {
     .strideLength = 8,
     .data = { 3 }
   };
 
-  mesh::bind_vao(cube);
-  mesh::generate_vbo(cube, vertices);
-  mesh::set_vertex_attributes(objAttribute);
-  mesh::bind_vao(light_handle);
-  mesh::bind_vbo(light_handle);
-  mesh::set_vertex_attributes(lightAttribute);
+  Mesh::Handles obj_cube = mesh_manager.Create_Handle();
+  Load_Obj("resources/obj/cube.obj", obj_cube);
 
-  u32 turn_tube_vao;
-  u32 turn_tube_vbo;
-  u32 turn_tube_ebo;
-  glGenVertexArrays(1, &turn_tube_vao);
-  glGenBuffers(1, &turn_tube_vbo);
-  glGenBuffers(1, &turn_tube_ebo);
-  mesh::Handles turn_tube = {
-    .vao = turn_tube_vao,
-    .vbo = turn_tube_vbo,
-    .ebo = turn_tube_ebo,
-    .drawElementsCount = 0
-  };
+  Mesh::Handles obj_cylinder = mesh_manager.Create_Handle();
+  Load_Obj("resources/obj/cylinder.obj", obj_cylinder);
 
-  u32 circle_vao;
-  u32 circle_vbo;
-  u32 circle_ebo;
-  glGenVertexArrays(1, &circle_vao);
-  glGenBuffers(1, &circle_vbo);
-  glGenBuffers(1, &circle_ebo);
-  mesh::Handles circle = {
-    .vao = circle_vao,
-    .vbo = circle_vbo,
-    .ebo = circle_ebo,
-    .drawElementsCount = 0
-  };
+  Mesh::Handles obj_half_bend = mesh_manager.Create_Handle();
+  Load_Obj("resources/obj/half_bend.obj", obj_half_bend);
 
-  u32 tube_vao;
-  u32 tube_vbo;
-  u32 tube_ebo;
-  glGenVertexArrays(1, &tube_vao);
-  glGenBuffers(1, &tube_vbo);
-  glGenBuffers(1, &tube_ebo);
-  mesh::Handles tube = {
-    .vao = tube_vao,
-    .vbo = tube_vbo,
-    .ebo = tube_ebo,
-    .drawElementsCount = 0
-  };
+  Mesh::Handles obj_tail = mesh_manager.Create_Handle();
+  Load_Obj("resources/obj/tail.obj", obj_tail);
 
-  unsigned int vao, vbo, ebo;
-  glGenVertexArrays(1, &vao);
-  glGenBuffers(1, &vbo);
-  glGenBuffers(1, &ebo);
-  mesh::Handles square = {
-    .vao = vao,
-    .vbo = vbo,
-    .ebo = ebo,
-    .drawElementsCount = 0
-  };
-  
-  unsigned int vao1, vbo1, ebo1;
-  glGenVertexArrays(1, &vao1);
-  glGenBuffers(1, &vbo1);
-  glGenBuffers(1, &ebo1);
-  mesh::Handles outer = {
-    .vao = vao1,
-    .vbo = vbo1,
-    .ebo = ebo1,
-    .drawElementsCount = 0
-  };
+  Mesh::bind_vao(cube);
+  Mesh::generate_vbo(cube, vertices);
+  Mesh::set_vertex_attributes(objAttribute);
+  Mesh::bind_vao(light_handle);
+  Mesh::bind_vbo(light_handle);
+  Mesh::set_vertex_attributes(lightAttribute);
 
-  u32 tail_vao;
-  u32 tail_vbo;
-  u32 tail_ebo;
-  glGenVertexArrays(1, &tail_vao);
-  glGenBuffers(1, &tail_vbo);
-  glGenBuffers(1, &tail_ebo);
-  mesh::Handles cone = {
-    .vao = tail_vao,
-    .vbo = tail_vbo,
-    .ebo = tail_ebo,
-    .drawElementsCount = 0
-  };
-  
-  mesh::Generate_Cone(cone);
-  mesh::generate_square(square);
-  mesh::generate_outer(outer);
-  mesh::generate_circle(circle);
-  mesh::generate_tube(tube, gameState.player_);
-  mesh::generate_bending_tube(turn_tube);
+  Mesh::Handles square = mesh_manager.Create_Handle();
+  Mesh::Handles outer = mesh_manager.Create_Handle();
+  Mesh::generate_square(square);
+  Mesh::generate_outer(outer);
     
   stbi_set_flip_vertically_on_load(true);
   Texture woodenBox = texture::load("resources/container2.png");
   Texture specularMap = texture::load("resources/container2_specular.png");
 
   Shader colour = shader::compile("shaders/lighting.vert", "shaders/lighting.frag");
+  colour.use();
+  colour.setInt("material.diffuse", 0);
+  colour.setInt("material.specular", 1);
   Shader light  = shader::compile("shaders/light.vert", "shaders/light.frag");
   Shader basic  = shader::compile("shaders/basic.vert", "shaders/basic.frag");
   Shader snake  = shader::compile("shaders/snake.vert", "shaders/snake.frag");
 				 
-  colour.use();
-  colour.setInt("material.diffuse", 0);
-  colour.setInt("material.specular", 1);
   
-  mat4 projection = mat4::setPerspective(maths::radians(45.0f), (float) width / (float) height, 0.1f, 100.0f);
   
-  //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+  mat4 projection = mat4::setPerspective(maths::radians(45.0f), (float) 1920 / (float) 1080, 0.1f, 100.0f);
 
   DirectionalLight lightData = {
     ._direction = { 1.2f, 1.0f, 2.0f },
@@ -314,8 +219,7 @@ int main() {
       ImGui_ImplOpenGL3_NewFrame();
       ImGui_ImplGlfw_NewFrame();
       ImGui::NewFrame();
-      
-      
+  
       if (timer >= 0.5f) {
 	  bool growing = gameState.loop();
 	  timer -= 0.5f;
@@ -385,11 +289,12 @@ int main() {
 	      model = translate(model, position);
 	      basic.setMat4("model", model);
 	      basic.setVec3("colour", vec3{0.1, 0.2, 0.6});
-	      mesh::draw_element_array(square);
+	      Mesh::draw_element_array(square);
 	      basic.setVec3("colour", vec3{0.1, 0.6, 0.3});
-	      mesh::draw_element_array(outer);
+	      Mesh::draw_element_array(outer);
 	  }
       }
+      
       snake.use();
       model = mat4{};
       snake.setLight(snake_light);
@@ -400,7 +305,6 @@ int main() {
       snake.setMat4("projection", projection);
       // render snake body - messy? clean up?
       // Switch to wireframe mode
-      glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
       for (u32 i{0}; i < gameState.player_.body_length_; i++) {
 	  mat4 model = mat4{};
 	  vec2 current = gameState.player_.body[i];
@@ -417,32 +321,33 @@ int main() {
 
 	  bool is_bend{true};
 	  if (next[0] != -1.0f && next[1] != -1.0f) {
-	      is_bend = (direction_in[0] != direction_out[0] || direction_in[1] != direction_out[1]);
+	      is_bend = (direction_in[0] != direction_out[0] ||
+			 direction_in[1] != direction_out[1]);
 	  }
 
 	  direction_in.Absolute();
 	  model = translate(model, vec3{(float) current[0], 0, current[1]}); 
 	  snake.setVec3("colour", vec3{0.7, 0.3, 0.1});
 	  if (tail == true) {
-	      mesh::bind_vao(cone);
+	      
 	      vec2 direction = previous - current;
 	      float turn_direction = vec2::dot_product(direction_in, current);
 	      f32 rotation_angle{0.0f};
 	      i32 x = static_cast<i32>(direction[0]);
 	      i32 y = static_cast<i32>(direction[1]);
 	      if (x == 1) {
-		  rotation_angle = 270.0f;
-	      } else if (x == -1) {
 		  rotation_angle = 90.0f;
+	      } else if (x == -1) {
+		  rotation_angle = 270.0f;
 	      } else if (y == -1) {
-		  rotation_angle = 180.0f;
-	      } else if (y == 1) {
 		  rotation_angle = 0.0f;
+	      } else if (y == 1) {
+		  rotation_angle = 180.0f;
 	      }
-	      ImGui::Text("direction: %f rotation: %f\n %d %d", turn_direction, rotation_angle, x, y);
 	      model = rotate(model, maths::radians(rotation_angle), vec3(0, 1, 0));
 	      snake.setMat4("model", model);
-	      mesh::draw_element_array(cone);
+	      Mesh::bind_vao(obj_tail);
+	      Mesh::draw_vertex_arrays(obj_tail);
 	  }
 	  else if (true == is_bend) {
 	      vec2 direction = previous - current;
@@ -453,42 +358,43 @@ int main() {
 		  vec2 sum = direction + direction_out;
 		  i32 x = static_cast<i32>(sum[0]);
 		  i32 y = static_cast<i32>(sum[1]);
+		  ImGui::Text("direction: %f\n %d %d", turn_direction, x, y);
 		  if (turn_direction > 0.0f) {
 		      if (x == 1 && y == 1) {
-			  rotation = 180.0f;
-		      } else if (x == -1 && y ==  1) {
-			  rotation = 270.0f;
-		      } else if (x == -1 && y == -1) {
 			  rotation = 0.0f;
-		      } else if (x ==  1 && y == -1) {
+		      } else if (x == -1 && y ==  1) {
 			  rotation = 90.0f;
+		      } else if (x == -1 && y == -1) {
+			  rotation = 180.0f;
+		      } else if (x ==  1 && y == -1) {
+			  rotation = 270.0f;
 		      }
 		  } else {
 		      if (x ==  1 && y ==  1) {
-			  rotation = 180.0f;
+			  rotation = 0.0f;
 		      } else if (x == -1 && y ==  1) {
 			  rotation = 90.0f;
 		      } else if (x == -1 && y == -1) {
-			  rotation = 0.0f;
+			  rotation = 180.0f;
 		      } else if (x ==  1 && y == -1) {
-			  rotation = 90.0f;
+			  rotation = 270.0f;
 		      }
 		  }
 	      }
-	      mesh::bind_vao(turn_tube);
+	      
 	      model = rotate(model, maths::radians(rotation), vec3(0, 1, 0));
 	      snake.setMat4("model", model);
-	      mesh::draw_element_array(turn_tube);
+	      Mesh::bind_vao(obj_half_bend);
+	      Mesh::draw_vertex_arrays(obj_half_bend);
 	  }
 	  else {    
-	      mesh::bind_vao(tube);
-	      // this might be wrong
-	      model = rotate(model, maths::radians(90.0f), vec3(0, direction_in[0], direction_in[1]));
+	      vec2 direction = previous - current;
+	      model = rotate(model, maths::radians(90.0f), vec3(0, direction[0], direction[1]));
 	      snake.setMat4("model", model);
-	      mesh::draw_element_array(tube);
+	      Mesh::bind_vao(obj_cylinder);
+	      Mesh::draw_vertex_arrays(obj_cylinder);
 	  }
       }
-      glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
       ImGui::Render();
       ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());

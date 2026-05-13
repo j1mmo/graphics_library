@@ -15,12 +15,15 @@ set(IMGUI_SOURCES
 add_executable(opengl
 	glad.c
 	main.cpp
+	init.cpp
 	vertex_array.cpp	
 	shader.cpp
 	texture.cpp
 	camera.cpp
 	mesh.cpp
+	mesh_manager.cpp
 	object3d.cpp
+	obj_loader.cpp
 	snake.cpp)
 
 add_library(imgui ${IMGUI_SOURCES})

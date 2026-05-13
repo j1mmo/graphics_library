@@ -3,6 +3,6 @@
 
 #include "mesh.hpp"
 
-void Load_Obj(const char* file_location, mesh::Handles& handle);
+void Load_Obj(const char* file_location, Mesh::Handles& handle);
 
 #endif // OBJ_LOADER_HPP

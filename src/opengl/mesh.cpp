@@ -6,7 +6,7 @@
 #include <general.hpp>
 #include <frenet_serret.hpp>
 
-void mesh::generate_vertex_array_attributes(const mesh::Handles& mesh, const darray<float> data, const Attributes& attributes) {
+void Mesh::generate_vertex_array_attributes(const Mesh::Handles& mesh, const darray<float> data, const Attributes& attributes) {
   glBindVertexArray(mesh.vao);
   glBindBuffer(GL_ARRAY_BUFFER, mesh.vbo);
   glBufferData(GL_ARRAY_BUFFER, sizeof(float) * data.size(), data._data, GL_STATIC_DRAW);
@@ -22,46 +22,52 @@ void mesh::generate_vertex_array_attributes(const mesh::Handles& mesh, const dar
   glEnableVertexAttribArray(index);
 }
 
-void mesh::bind_vao(const mesh::Handles& handle) {
+void Mesh::bind_vao(const Mesh::Handles& handle) {
   glBindVertexArray(handle.vao);
 }
 
-void mesh::bind_vbo(const mesh::Handles& handle) {
+void Mesh::bind_vbo(const Mesh::Handles& handle) {
   glBindBuffer(GL_ARRAY_BUFFER, handle.vbo);
 }
 
-void mesh::bind_ebo(const mesh::Handles& handle)
+void Mesh::bind_ebo(const Mesh::Handles& handle)
 {
   glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, handle.ebo);
 }
 
-void mesh::generate_ebo(const mesh::Handles& m, const darray<u32>& indicies) {
+void Mesh::generate_ebo(const Mesh::Handles& m, const darray<u32>& indicies) {
   glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m.ebo);
   glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(u32) * indicies.size(), indicies._data, GL_STATIC_DRAW);
 }
 
-void mesh::generate_ebo_stream(const mesh::Handles& m, const darray<u32>& indicies) {
+void Mesh::generate_ebo_stream(const Mesh::Handles& m, const darray<u32>& indicies) {
   glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m.ebo);
   glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(u32) * indicies.size(), indicies._data, GL_STREAM_DRAW);
 }
 
-void mesh::generate_vbo(const mesh::Handles& handle, const darray<float>& data) {
+void Mesh::generate_vbo(const Mesh::Handles& handle, const darray<float>& data) {
   glBindBuffer(GL_ARRAY_BUFFER, handle.vbo);
   glBufferData(GL_ARRAY_BUFFER, sizeof(f32) * data.size(), data._data, GL_STATIC_DRAW);
 }
 
-void mesh::generate_vbo_stream(const mesh::Handles& handle, const darray<float>& data) {
+void Mesh::generate_vbo_stream(const Mesh::Handles& handle, const darray<float>& data) {
   glBindBuffer(GL_ARRAY_BUFFER, handle.vbo);
   glBufferData(GL_ARRAY_BUFFER, sizeof(f32) * data.size(), data._data, GL_STREAM_DRAW);
 }
 
-void mesh::draw_element_array(const mesh::Handles& mesh) {
+void Mesh::draw_element_array(const Mesh::Handles& mesh) {
   glBindVertexArray(mesh.vao);
   glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mesh.ebo);
   glDrawElements(GL_TRIANGLES, mesh.drawElementsCount, GL_UNSIGNED_INT, 0);
 }
 
-void mesh::set_vertex_attributes(const Attributes& attributes) {
+void Mesh::draw_vertex_arrays(const Mesh::Handles& mesh) {
+  glBindVertexArray(mesh.vao);
+  glBindBuffer(GL_ARRAY_BUFFER, mesh.vbo);
+  glDrawArrays(GL_TRIANGLES, 0, mesh.drawElementsCount);
+}
+
+void Mesh::set_vertex_attributes(const Attributes& attributes) {
   i32 offsetCounter{0}, index{0};
     
   for (const u32 attributeSize : attributes.data) {
@@ -79,7 +85,7 @@ void mesh::set_vertex_attributes(const Attributes& attributes) {
   }
 }
 
-void mesh::generate_square(mesh::Handles& mesh) {
+void Mesh::generate_square(Mesh::Handles& mesh) {
   const static darray<float> square = {
     0.4f,  0.0f, 0.4f,  // top right - 0
     0.4f,  0.0f,-0.4f,  // bottom right - 1
@@ -92,7 +98,7 @@ void mesh::generate_square(mesh::Handles& mesh) {
       1, 2, 3    // second triangle
   };  
 
-  mesh::Attributes attributes = {
+  Mesh::Attributes attributes = {
     .strideLength = 3,
     .data = { 3 },
   };
@@ -104,7 +110,7 @@ void mesh::generate_square(mesh::Handles& mesh) {
   mesh.drawElementsCount = indicies.size();
 }
 
-void mesh::Generate_Cone(mesh::Handles& mesh) {
+void Mesh::Generate_Cone(Mesh::Handles& mesh) {
   constexpr u32 segments{16};
   constexpr u32 no_of_verts{segments};
   constexpr f32 theta{(360.0f / static_cast<f32>(segments))};
@@ -174,7 +180,7 @@ void mesh::Generate_Cone(mesh::Handles& mesh) {
   bind_vao(mesh);
   generate_vbo(mesh, vertices);
   generate_ebo(mesh, polygons);
-  set_vertex_attributes(mesh::Attributes{
+  set_vertex_attributes(Mesh::Attributes{
       .strideLength = 8,
       .data = { 3, 3, 2 },
     });
@@ -183,7 +189,7 @@ void mesh::Generate_Cone(mesh::Handles& mesh) {
   vertices.clean();
 }
 
-void mesh::generate_outer(mesh::Handles& mesh) {
+void Mesh::generate_outer(Mesh::Handles& mesh) {
   const static darray<float> square = {
      0.5f,  0.0f, 0.5f,  // top right - 0
      0.5f,  0.0f,-0.5f,  // bottom right - 1
@@ -209,14 +215,14 @@ void mesh::generate_outer(mesh::Handles& mesh) {
   bind_vao(mesh);
   generate_vbo(mesh, square);
   generate_ebo(mesh, indicies);
-  set_vertex_attributes(mesh::Attributes{
+  set_vertex_attributes(Mesh::Attributes{
       .strideLength = 3,
       .data = { 3 },
   });
   mesh.drawElementsCount = indicies.size();  
 }
 
-void mesh::generate_bending_tube(mesh::Handles& mesh)
+void Mesh::generate_bending_tube(Mesh::Handles& mesh)
 {
   constexpr f32 bend_radius = 0.5f; 
   constexpr f32 pipe_radius = 0.5f;
@@ -294,7 +300,7 @@ void mesh::generate_bending_tube(mesh::Handles& mesh)
   bind_vao(mesh);
   generate_vbo(mesh, vertices);
   generate_ebo(mesh, indices);
-  set_vertex_attributes(mesh::Attributes{
+  set_vertex_attributes(Mesh::Attributes{
       .strideLength = 8,
       .data = { 3, 3, 2 },
     });
@@ -303,7 +309,7 @@ void mesh::generate_bending_tube(mesh::Handles& mesh)
   vertices.clean();
 }
 
-void mesh::generate_tube(mesh::Handles& mesh, const snake::Player& player) {
+void Mesh::generate_tube(Mesh::Handles& mesh, const snake::Player& player) {
   constexpr u32 segments{16};
   constexpr u32 no_of_verts{segments};
   constexpr f32 theta{360.0f / static_cast<f32>(segments)};
@@ -370,7 +376,7 @@ void mesh::generate_tube(mesh::Handles& mesh, const snake::Player& player) {
   bind_vao(mesh);
   generate_vbo(mesh, vertices);
   generate_ebo(mesh, polygons);
-  set_vertex_attributes(mesh::Attributes{
+  set_vertex_attributes(Mesh::Attributes{
       .strideLength = 8,
       .data = { 3, 3, 2 },
   });
@@ -379,7 +385,7 @@ void mesh::generate_tube(mesh::Handles& mesh, const snake::Player& player) {
   vertices.clean();
 }
 
-void mesh::generate_circle(mesh::Handles& mesh)
+void Mesh::generate_circle(Mesh::Handles& mesh)
 {
   constexpr u32 segments{20};
   constexpr u32 no_of_verts{segments + 1};
@@ -421,7 +427,7 @@ void mesh::generate_circle(mesh::Handles& mesh)
   bind_vao(mesh);
   generate_vbo(mesh, vertices);
   generate_ebo(mesh, polygons);
-  set_vertex_attributes(mesh::Attributes{
+  set_vertex_attributes(Mesh::Attributes{
       .strideLength = 3,
       .data = { 3 },
     });

@@ -25,6 +25,16 @@ uniform vec3 colour;
 
 uniform vec3 viewPos;
 
+float near = 0.1; 
+float far  = 100.0; 
+  
+float LinearizeDepth(float depth) 
+{
+    float z = depth * 2.0 - 1.0; // back to NDC 
+    return (2.0 * near * far) / (far + near - z * (far - near));	
+}
+
+
 void main(){
   vec3 ambient = light.ambient * material.diffuse;//vec3(texture(material.diffuse, TexCoords));
 
@@ -39,5 +49,9 @@ void main(){
   vec3 specular = light.specular * spec * material.specular;//vec3(texture(material.specular, TexCoords));
 
   vec3 result = ambient + diffuse + specular + (colour * 0.2);
-  FragColor = vec4(result, 1.0f);
+  result *= 0.1;
+  //FragColor = vec4(result, 1.0f);
+  float depth = LinearizeDepth(gl_FragCoord.z) / far;
+  vec3 result_other = result + depth;
+  FragColor = vec4(result_other, 1.0);
 }
