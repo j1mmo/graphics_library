@@ -22,6 +22,7 @@ add_executable(opengl
 	camera.cpp
 	mesh.cpp
 	mesh_manager.cpp
+	window_manager.cpp
 	object3d.cpp
 	obj_loader.cpp
 	snake.cpp)

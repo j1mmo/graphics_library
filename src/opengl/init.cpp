@@ -2,6 +2,8 @@
 
 #include <spdlog/spdlog.h>
 
+void MouseCallback(GLFWwindow* window, double xpos, double ypos);
+
 bool init::glfw()
 {
   bool glfw_init_state = glfwInit();
@@ -38,7 +40,7 @@ GLFWwindow* init::create_window()
 
 bool init::Glad()
 {
-  if (gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
+  if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
       spdlog::critical("Failed to initialise GLAD.");
       return false;
   }
@@ -70,3 +72,23 @@ ImGuiIO& init::Imgui(GLFWwindow* window)
 
   return io;
 }
+
+Window init::Init_Everything()
+{
+  bool glfw = init::glfw();
+  if (false == glfw) {
+      return Window{};
+  }
+  
+  GLFWwindow * window = init::create_window();
+  init::Glad();
+  init::Set_Callback_Functions(window);
+  glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+  ImGuiIO& io = init::Imgui(window);
+
+  Window w;
+  w.Init(window, io);
+  return w;
+}
+
+

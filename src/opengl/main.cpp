@@ -16,6 +16,7 @@
 #include <obj_loader.hpp>
 #include <init.hpp>
 #include <mesh_manager.hpp>
+#include <window_manager.hpp>
 
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
@@ -23,12 +24,27 @@
 float deltaTime = 0.0f;
 float lastFrame = 0.0f;
 
-void processInput(GLFWwindow* window);
-void processKeyboard(GLFWwindow* window, double xpos, double ypos);
-
 Camera camera{};
 
 float lastX = 400, lastY = 300;
+
+void processInput(GLFWwindow* window);
+void MouseCallback(GLFWwindow* window, double xpos, double ypos) {
+    static bool firstMouse = true;
+    
+    if (firstMouse) {
+	lastX = xpos;
+	lastY = ypos;
+	firstMouse = false;
+    }
+    
+    float xOffset = xpos - lastX;
+    float yOffset = lastY - ypos;
+    lastX = xpos;
+    lastY = ypos;
+    
+    camera.processMouseMovement(xOffset, yOffset);
+}
 
 snake::game_state gameState;
 
@@ -84,23 +100,18 @@ i32 getMaximumVertexAttributes() {
 }
 
 int main() {
-  
-  init::glfw();
-  GLFWwindow * window = init::create_window();
-  init::Glad();
-  init::Set_Callback_Functions(window);
-  
-  glfwSetCursorPosCallback(window, processKeyboard);
-  glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+  Window window = init::Init_Everything();
+  glfwSetCursorPosCallback(window.window_handle, MouseCallback);
 
-  ImGuiIO& io = init::Imgui(window);
-  
   glEnable(GL_DEPTH_TEST);
   glDepthFunc(GL_LESS);
+  glEnable(GL_STENCIL_TEST);
+  glStencilFunc(GL_NOTEQUAL, 1, 0xFF);
+  glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
 
   Mesh::Mesh_Manager mesh_manager;
   mesh_manager.Init();
-   
+  
   unsigned int VAO[2];
   glGenVertexArrays(2, VAO);
   unsigned int VBO[1];
@@ -163,10 +174,9 @@ int main() {
   Shader light  = shader::compile("shaders/light.vert", "shaders/light.frag");
   Shader basic  = shader::compile("shaders/basic.vert", "shaders/basic.frag");
   Shader snake  = shader::compile("shaders/snake.vert", "shaders/snake.frag");
-				 
+  Shader snake_outline = shader::compile("shaders/snake.vert", "shaders/stencil_outline.frag");
   
-  
-  mat4 projection = mat4::setPerspective(maths::radians(45.0f), (float) 1920 / (float) 1080, 0.1f, 100.0f);
+  mat4 projection = window.Projection();
 
   DirectionalLight lightData = {
     ._direction = { 1.2f, 1.0f, 2.0f },
@@ -205,8 +215,15 @@ int main() {
     { 0.0f,  0.0f, -3.0f}
   };
 
+  FlashLight flashLight = {
+    ._position    = {camera._position},
+    ._direction   = {camera._front},
+    ._cutOff      = cosf(maths::radians(12.5f)),
+    ._outerCutOff = cosf(maths::radians(17.5f))
+  };
+
   float timer{0};
-  while(!glfwWindowShouldClose(window)) {
+  while(!glfwWindowShouldClose(window.window_handle)) {
 
       float currentFrame = glfwGetTime();
       deltaTime = currentFrame - lastFrame;
@@ -214,7 +231,7 @@ int main() {
 
       timer += deltaTime;
 
-      processInput(window);
+      processInput(window.window_handle);
 
       ImGui_ImplOpenGL3_NewFrame();
       ImGui_ImplGlfw_NewFrame();
@@ -226,48 +243,16 @@ int main() {
       }
       
       glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
-      glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
+      glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+      
+      glStencilMask(0x00);
       mat4 view = camera.getView();
-
-      FlashLight flashLight = {
-	._position    = {camera._position},
-	._direction   = {camera._front},
-	._cutOff      = cosf(maths::radians(12.5f)),
-	._outerCutOff = cosf(maths::radians(17.5f))
-      };
       
-      colour.use();
-      
-      colour.setLight(pointLight, pointLightPositions);
-      colour.setVec3("viewPos", camera._position);
-      colour.setMaterial(material);
 
-      glActiveTexture(GL_TEXTURE0);
-      woodenBox.bind();
-      glActiveTexture(GL_TEXTURE1);
-      specularMap.bind();
-
-      colour.setMat4("view", view);
-      colour.setMat4("projection", projection);
-
-      glBindVertexArray(VAO[0]);
-
-      //render head
-      mat4 model;
-      model = translate(model, vec3{(float) gameState.player_.head[0], 0, gameState.player_.head[1]});
-      colour.setMat4("model", model);
-      glDrawArrays(GL_TRIANGLES, 0, 36);
-
-      // render food
-      model = mat4{};
-      model = translate(model, vec3{(float) gameState.food_[0], 0, gameState.food_[1]});
-      colour.setMat4("model", model);
-      glDrawArrays(GL_TRIANGLES, 0, 36);
 
       light.use();
-
-      model = mat4{};
+      
+      mat4 model = mat4{};
       model = translate(model, lightData._direction);
       model = scale(model, vec3{0.2f, 0.2f, 0.2f});
       light.setMat4("view", view);
@@ -294,6 +279,41 @@ int main() {
 	      Mesh::draw_element_array(outer);
 	  }
       }
+      
+
+      colour.use();
+      colour.setLight(pointLight, pointLightPositions);
+      colour.setVec3("viewPos", camera._position);
+      colour.setMaterial(material);
+
+      glActiveTexture(GL_TEXTURE0);
+      woodenBox.bind();
+      glActiveTexture(GL_TEXTURE1);
+      specularMap.bind();
+
+      colour.setMat4("view", view);
+      colour.setMat4("projection", projection);
+
+      //render head
+      model = translate(model, vec3{
+	  (float)gameState.player_.head[0],
+	  0,
+	  gameState.player_.head[1]});
+      colour.setMat4("model", model);
+      glBindVertexArray(VAO[0]);
+      glDrawArrays(GL_TRIANGLES, 0, 36);
+
+      // render food
+      model = mat4{};
+      model = translate(model, vec3{
+	  (float) gameState.food_[0],
+	  0,
+	  gameState.food_[1]});
+      colour.setMat4("model", model);
+      glDrawArrays(GL_TRIANGLES, 0, 36);
+
+      glStencilFunc(GL_ALWAYS, 1, 0xFF);
+      glStencilMask(0xFF);
       
       snake.use();
       model = mat4{};
@@ -395,11 +415,116 @@ int main() {
 	      Mesh::draw_vertex_arrays(obj_cylinder);
 	  }
       }
+      
+      // second pass
+      glStencilFunc(GL_NOTEQUAL, 1, 0xFF);
+      glStencilMask(0x00);
+      glDisable(GL_DEPTH_TEST);
+      snake_outline.use();
+      snake_outline.setMat4("view", view);
+      snake_outline.setMat4("projection", projection);
+      for (u32 i{0}; i < gameState.player_.body_length_; i++) {
+	  f32 scale_factor = 1.5f;
+	  mat4 model = mat4{};
+	  vec2 current = gameState.player_.body[i];
+	  vec2 previous = (i == 0) ? gameState.player_.head : gameState.player_.body[i - 1];
+	  vec2 next {-1.0f, -1.0f};
+	  bool tail{false};
+	  if (i == gameState.player_.body_length_ - 1) {
+	      tail = true;
+	  } else {
+	      next = gameState.player_.body[i + 1];
+	  }
+	  vec2 direction_in = current - previous;
+	  vec2 direction_out = next - current;
+
+	  bool is_bend{true};
+	  if (next[0] != -1.0f && next[1] != -1.0f) {
+	      is_bend = (direction_in[0] != direction_out[0] ||
+			 direction_in[1] != direction_out[1]);
+	  }
+
+	  direction_in.Absolute();
+	  model = translate(model, vec3{(float) current[0], 0, current[1]}); 
+	  if (tail == true) {
+	      
+	      vec2 direction = previous - current;
+	      float turn_direction = vec2::dot_product(direction_in, current);
+	      f32 rotation_angle{0.0f};
+	      i32 x = static_cast<i32>(direction[0]);
+	      i32 y = static_cast<i32>(direction[1]);
+	      if (x == 1) {
+		  rotation_angle = 90.0f;
+	      } else if (x == -1) {
+		  rotation_angle = 270.0f;
+	      } else if (y == -1) {
+		  rotation_angle = 0.0f;
+	      } else if (y == 1) {
+		  rotation_angle = 180.0f;
+	      }
+	      model = scale(model, vec3{scale_factor, scale_factor, scale_factor});
+	      model = rotate(model, maths::radians(rotation_angle), vec3(0, 1, 0));
+	      snake_outline.setMat4("model", model);
+	      Mesh::bind_vao(obj_tail);
+	      Mesh::draw_vertex_arrays(obj_tail);
+	  }
+	  else if (true == is_bend) {
+	      vec2 direction = previous - current;
+	      float dot = vec2::dot_product(direction, direction_out);
+	      float rotation{0.0f};
+	      if (dot == 0.0f) {
+		  float turn_direction = (direction_in[0] * direction_out[1]) - (direction_in[1] * direction_out[0]);
+		  vec2 sum = direction + direction_out;
+		  i32 x = static_cast<i32>(sum[0]);
+		  i32 y = static_cast<i32>(sum[1]);
+		  ImGui::Text("direction: %f\n %d %d", turn_direction, x, y);
+		  if (turn_direction > 0.0f) {
+		      if (x == 1 && y == 1) {
+			  rotation = 0.0f;
+		      } else if (x == -1 && y ==  1) {
+			  rotation = 90.0f;
+		      } else if (x == -1 && y == -1) {
+			  rotation = 180.0f;
+		      } else if (x ==  1 && y == -1) {
+			  rotation = 270.0f;
+		      }
+		  } else {
+		      if (x ==  1 && y ==  1) {
+			  rotation = 0.0f;
+		      } else if (x == -1 && y ==  1) {
+			  rotation = 90.0f;
+		      } else if (x == -1 && y == -1) {
+			  rotation = 180.0f;
+		      } else if (x ==  1 && y == -1) {
+			  rotation = 270.0f;
+		      }
+		  }
+	      }
+	      model = scale(model, vec3{scale_factor, scale_factor, scale_factor});
+	      model = rotate(model, maths::radians(rotation), vec3(0, 1, 0));
+	      snake_outline.setMat4("model", model);
+	      Mesh::bind_vao(obj_half_bend);
+	      Mesh::draw_vertex_arrays(obj_half_bend);
+	  }
+	  else {    
+	      vec2 direction = previous - current;
+	      model = scale(model, vec3{scale_factor, scale_factor, scale_factor});
+	      model = rotate(model, maths::radians(90.0f), vec3(0, direction[0], direction[1]));
+	      snake_outline.setMat4("model", model);
+	      Mesh::bind_vao(obj_cylinder);
+	      Mesh::draw_vertex_arrays(obj_cylinder);
+	  }
+      }
+      
+
+      glStencilMask(0xFF);
+      glStencilFunc(GL_ALWAYS, 0, 0xFF);
+      glEnable(GL_DEPTH_TEST);
 
       ImGui::Render();
       ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
       
-      glfwSwapBuffers(window);
+      glfwSwapBuffers(window.window_handle);
       glfwPollEvents();
   }
 
@@ -443,19 +568,4 @@ void processInput(GLFWwindow* window)
   }
 }
 
-void processKeyboard(GLFWwindow* window, double xpos, double ypos) {
-    static bool firstMouse = true;
-    
-    if (firstMouse) {
-	lastX = xpos;
-	lastY = ypos;
-	firstMouse = false;
-    }
-    
-    float xOffset = xpos - lastX;
-    float yOffset = lastY - ypos;
-    lastX = xpos;
-    lastY = ypos;
-    
-    camera.processMouseMovement(xOffset, yOffset);
-}
+

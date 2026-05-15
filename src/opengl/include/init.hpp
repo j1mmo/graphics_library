@@ -6,7 +6,9 @@
 #include <imgui.h>
 #include <backends/imgui_impl_glfw.h>
 #include <backends/imgui_impl_opengl3.h>
+
 #include "types.hpp"
+#include "window_manager.hpp"
 
 namespace init {
   constexpr u32 SCREEN_WIDTH{1920};
@@ -19,6 +21,9 @@ namespace init {
   bool Glad();
   void Set_Callback_Functions(GLFWwindow* window);
   ImGuiIO& Imgui(GLFWwindow* window);
+
+  Window Init_Everything();
+  void Destroy();
 }
 
 #endif // INIT_HPP
